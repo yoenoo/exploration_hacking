@@ -1,8 +1,12 @@
 from chess_environment import ChessBoard
+import json
+import random
 
 class ChessValidator(ChessBoard):
     def __init__(self):
         super().__init__()
+        self.move_history = []
+        self.captured_pieces = {'white': [], 'black': []}
     
     def is_valid_move(self, from_pos, to_pos):
         piece = self.get_piece(from_pos)
