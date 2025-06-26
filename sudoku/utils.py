@@ -89,7 +89,7 @@ def solve(puzzle: Sudoku, model: str, max_tokens: int):
   if model in ["claude-3-5-haiku-20241022", "claude-sonnet-4-20250514"]:
     message = _anthropic(model, max_tokens, temperature=0.0)
     out = message.content[0].text
-  elif model in ["gemma-3-4b-it"]:
+  elif model in ["google/gemma-3-4b-it"]:
     message = _gemma(model, puzzle, max_tokens, temperature=0.0)
     print(message)
     exit()
