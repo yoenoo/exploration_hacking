@@ -4,14 +4,16 @@ from utils import generate_puzzle, solve, correctly_filled_cells
 # TODO : generate rollouts
 n_tries = 10
 grid_size = 3
-difficulties = [0.1, 0.2, 0.3, 0.5, 0.9]
-
+difficulties = [0.02, 0.1, 0.2, 0.3, 0.5, 0.9]
+# 0.02 -> only 1 cell to fill
+# 0.99 -> only 1 cell is filled
 
 """
 # TODO: 
 - RL simulation using ICL? SFT? already in the prompt the model is taught the rules of sudoku, but not given any examples
-- rollouts (w/ nucleus sampling)
 - malign init?
+- rollouts (w/ nucleus sampling)
+- can do you an RL training loop?
 """
 
 
