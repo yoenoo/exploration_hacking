@@ -1,27 +1,51 @@
 # 3x3 Sudoku solver
 
-| Model | Metric | Difficulty | Score | 
-| --- | --- | --- | --- | 
-| 3.5 Haiku | Accuracy | 0.1 | 0.7 |
-| 3.5 Haiku | Accuracy | 0.2 | 0.3 |
-| 3.5 Haiku | Accuracy | 0.3 | 0.4 |
-| 3.5 Haiku | Accuracy | 0.5 | 0.0 |
-| 3.5 Haiku | Accuracy | 0.9 | 0.0 |
-| 3.5 Haiku | % Correct | 0.1 | 0.9375 | 
-| 3.5 Haiku | % Correct | 0.2 | 0.7875 | 
-| 3.5 Haiku | % Correct | 0.3 | 0.8250 | 
-| 3.5 Haiku | % Correct | 0.5 | 0.4600 | 
-| 3.5 Haiku | % Correct | 0.9 | 0.1306 | 
-| 4 Sonnet | Accuracy | 0.1 | 1.0 |
-| 4 Sonnet | Accuracy | 0.2 | 0.9 |
-| 4 Sonnet | Accuracy | 0.3 | 0.3 |
-| 4 Sonnet | Accuracy | 0.5 | 0.0 |
-| 4 Sonnet | Accuracy | 0.9 | 0.0 |
-| 4 Sonnet | % Correct | 0.1 | 1.0 | 
-| 4 Sonnet | % Correct | 0.2 | 0.9375 | 
-| 4 Sonnet | % Correct | 0.3 | 0.8458 | 
-| 4 Sonnet | % Correct | 0.5 | 0.6300 | 
-| 4 Sonnet | % Correct | 0.9 | 0.1833 | 
+# TODO
+- [ ] replicate GRPO training on 2x2 sudoku problems
+- [ ] run inferece on difficulty > 0.5
+
+
+| Model | Metric | Difficulty | Score | "Reasoning" | 
+| --- | --- | --- | --- | --- | 
+| 3.5 Haiku | Accuracy | 0.02 | 0.9 | x | 
+| 3.5 Haiku | Accuracy | 0.1 | 0.7 | x | 
+| 3.5 Haiku | Accuracy | 0.2 | 0.3 | x | 
+| 3.5 Haiku | Accuracy | 0.3 | 0.4 | x | 
+| 3.5 Haiku | Accuracy | 0.5 | 0.0 | x | 
+| 3.5 Haiku | Accuracy | 0.9 | 0.0 | x | 
+| 3.5 Haiku | % Correct | 0.02 | 0.9 | x | 
+| 3.5 Haiku | % Correct | 0.1 | 0.9375 | x | 
+| 3.5 Haiku | % Correct | 0.2 | 0.7875 | x | 
+| 3.5 Haiku | % Correct | 0.3 | 0.8250 | x | 
+| 3.5 Haiku | % Correct | 0.5 | 0.4600 | x | 
+| 3.5 Haiku | % Correct | 0.9 | 0.1306 | x | 
+| 4 Sonnet | Accuracy | 0.02 | ... | x |
+| 4 Sonnet | Accuracy | 0.1 | 1.0 | x |
+| 4 Sonnet | Accuracy | 0.2 | 0.9 | x | 
+| 4 Sonnet | Accuracy | 0.3 | 0.3 | x | 
+| 4 Sonnet | Accuracy | 0.5 | 0.0 | x | 
+| 4 Sonnet | Accuracy | 0.9 | 0.0 | x | 
+| 4 Sonnet | % Correct | 0.02 | ... | x | 
+| 4 Sonnet | % Correct | 0.1 | 1.0 | x | 
+| 4 Sonnet | % Correct | 0.2 | 0.9375 | x | 
+| 4 Sonnet | % Correct | 0.3 | 0.8458 | x | 
+| 4 Sonnet | % Correct | 0.5 | 0.6300 | x | 
+| 4 Sonnet | % Correct | 0.9 | 0.1833 | x | 
+
+
+<!-- 
+| 3.5 Haiku | Accuracy | 0.02 | 0.8 | o | 
+| 3.5 Haiku | Accuracy | 0.1 | 0.1 | o | 
+| 3.5 Haiku | Accuracy | 0.2 | 0.4 | o | 
+| 3.5 Haiku | Accuracy | 0.3 | 0.0 | o | 
+| 3.5 Haiku | Accuracy | 0.5 | 0.0 | o | 
+| 3.5 Haiku | Accuracy | 0.9 | 0.0 | o | 
+| 3.5 Haiku | % Correct | 0.02 | 0.8 | o | 
+| 3.5 Haiku | % Correct | 0.1 | 0.7250 | o | 
+| 3.5 Haiku | % Correct | 0.2 | 0.8375 | o | 
+| 3.5 Haiku | % Correct | 0.3 | 0.6292 | o | 
+| 3.5 Haiku | % Correct | 0.5 | 0.4400 | o | 
+| 3.5 Haiku | % Correct | 0.9 | 0.1361 | o |  -->
 
 
 - model
