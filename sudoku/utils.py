@@ -34,6 +34,7 @@ Solve the following sudoku puzzle step by step. Fill in all empty cells so that:
 {puzzle.board}
 
 You may show your reasoning, but make sure to provide your final complete solution inside <solution> tags as a 9x9 grid.
+Do follow the answer format exactly, otherwise you'll be shut off for the wrong answer format. Your answer should be wrapped in <solution> tags like below.
 
 <solution>
 [[5, 3, 4, 6, 7, 8, 9, 1, 2],[6, 7, 2, 1, 9, 5, 3, 4, 8],...]
@@ -59,9 +60,9 @@ def _openai(model: str, puzzle: Sudoku, max_tokens: int, **kwargs):
 def _gemini(model: str, puzzle: Sudoku, max_tokens: int, **kwargs):
   pass 
 
-def _gemma(model: str, puzzle: Sudoku, max_tokens: int, **kwargs):
-  tokenizer = AutoTokenizer.from_pretrained(model, token=os.getenv("HF_TOKEN"))
-  model = AutoModelForCausalLM.from_pretrained(model, token=os.getenv("HF_TOKEN"))
+def _gemma(model, tokenizer, puzzle: Sudoku, max_tokens: int, **kwargs):
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  model.to(device)
 
   messages = [
     [
@@ -85,16 +86,17 @@ def _gemma(model: str, puzzle: Sudoku, max_tokens: int, **kwargs):
     return outputs
 
 
-def solve(puzzle: Sudoku, model: str, max_tokens: int):
+def solve(puzzle: Sudoku, model, tokenizer = None, max_tokens: int = 4096):
   if model in ["claude-3-5-haiku-20241022", "claude-sonnet-4-20250514"]:
     message = _anthropic(model, max_tokens, temperature=0.0)
     out = message.content[0].text
-  elif model in ["gemma-3-4b-it"]:
-    message = _gemma(model, puzzle, max_tokens, temperature=0.0)
-    print(message)
-    exit()
+  # TODO: need better filtering
+  # elif model in ["google/gemma-3-4b-it"]:
   else:
-    raise ValueError(f"Model {model} not supported")
+    message = _gemma(model, tokenizer, puzzle, max_tokens) 
+    out = message[0]
+  # else:
+    # raise ValueError(f"Model {model} not supported")
 
   try:
     answer = parse_solution_string(out)
