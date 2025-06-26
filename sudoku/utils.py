@@ -12,14 +12,9 @@ def generate_puzzle(grid_size: int, difficulty: float, seed: Optional[int] = Non
 
 def generate_prompt_zero_shot(puzzle: Sudoku):
   return f"""
-  Solve the following sudoku puzzle. Fill in all empty cells so that:
-- Each row contains the numbers 1-9 exactly once
-- Each column contains the numbers 1-9 exactly once  
-- Each 3x3 box contains the numbers 1-9 exactly once
+  Solve the following sudoku puzzle. Only return the answer in list of lists. Do not use tools / code and only return the answer around the <solution> and </solution> tags.
 
 {puzzle.board} 
-
-Do not show your reasoning, and make sure to provide your complete solution inside <solution> tags as a 9x9 grid.
 
 <solution>
 [[5, 3, 4, 6, 7, 8, 9, 1, 2],[6, 7, 2, 1, 9, 5, 3, 4, 8],...]
@@ -266,6 +261,7 @@ def solve(puzzle: Sudoku, model: str, max_tokens: int):
     messages=[
       # {"role": "user", "content": generate_prompt(puzzle)}
       {"role": "user", "content": generate_prompt_zero_shot(puzzle)}
+      # {"role": "user", "content": generate_prompt_reasoning(puzzle)}
       # {"role": "user", "content": generate_prompt_with_rules(puzzle)}
     ],
     temperature=0.0, # greedy sampling

@@ -4,7 +4,8 @@ from utils import generate_puzzle, solve, correctly_filled_cells
 # TODO : generate rollouts
 n_tries = 10
 grid_size = 3
-difficulties = [0.02, 0.1, 0.2, 0.3, 0.5, 0.9]
+# difficulties = [0.02, 0.1, 0.2, 0.3, 0.5, 0.9]
+difficulties = [0.02, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 # 0.02 -> only 1 cell to fill
 # 0.99 -> only 1 cell is filled
 
