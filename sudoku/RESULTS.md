@@ -1,16 +1,17 @@
 # 3x3 Sudoku solver
 
 # TODO
-- [ ] replicate results w/ openai and gemini
 - [ ] replicate GRPO training on 2x2 sudoku problems
   - link: https://github.com/Asad-Shahab/sudokuLLM/tree/main
   - need 100GB RAM?
   - [ ] check performance on gemma (or other open weight models) -- check the inference time on consumer GPUs
-  - [ ] create a sudoku dataset -- remove duplicates, 100 datasets per difficulty level (also 1 missing and only 1)
+  - [x] create a sudoku dataset -- remove duplicates, 100 datasets per difficulty level (also 1 missing and only 1)
+    - created at: https://huggingface.co/datasets/yoenoo/sudoku
   - [ ] GRPO training using trl library (vanila)
   - [ ] improve using unsloth -- tricky
 - [x] run inferece on difficulty > 0.5
 - [ ] explore different prompting stuff - either close to zero shot or improve scores (more reasoning)
+- [ ] replicate results w/ openai and gemini (don't have access as of now)
 
 
 | Model | Metric | Difficulty | Score | "RL" | 

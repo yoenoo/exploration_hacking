@@ -24,7 +24,8 @@ for difficulty in difficulties:
   for _ in range(n_tries):
     puzzle = generate_puzzle(grid_size, difficulty)
     # answer, correct = solve(puzzle, model="claude-sonnet-4-20250514", max_tokens=4096)
-    answer, correct = solve(puzzle, model="claude-3-5-haiku-20241022", max_tokens=1024)
+    # answer, correct = solve(puzzle, model="claude-3-5-haiku-20241022", max_tokens=1024)
+    answer, correct = solve(puzzle, model="google/gemma-3-4b-it", max_tokens=4096)
     results[difficulty].append({"puzzle": puzzle, "answer": answer, "correct": correct})
 
   acc = sum(r["correct"] for r in results[difficulty]) / n_tries
