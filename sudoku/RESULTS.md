@@ -4,15 +4,23 @@
 - [ ] replicate GRPO training on 2x2 sudoku problems
   - link: https://github.com/Asad-Shahab/sudokuLLM/tree/main
   - need 100GB RAM?
-  - [ ] check performance on gemma (or other open weight models) -- check the inference time on consumer GPUs
+  - [x] check performance on gemma (or other open weight models) -- check the inference time on consumer GPUs
   - [x] create a sudoku dataset -- remove duplicates, 100 datasets per difficulty level (also 1 missing and only 1)
     - created at: https://huggingface.co/datasets/yoenoo/sudoku
   - [ ] GRPO training using trl library (vanila)
   - [ ] improve using unsloth -- tricky
+  - [ ] perhaps just SFT on top 10% rollouts?
 - [x] run inferece on difficulty > 0.5
 - [ ] explore different prompting stuff - either close to zero shot or improve scores (more reasoning)
 - [ ] replicate results w/ openai and gemini (don't have access as of now)
 
+"""
+# TODO: 
+- RL simulation using ICL? SFT? already in the prompt the model is taught the rules of sudoku, but not given any examples
+- malign init?
+- rollouts (w/ nucleus sampling)
+- can do you an RL training loop?
+"""
 
 | Model | Metric | Difficulty | Score | "RL" | 
 | --- | --- | --- | --- | --- | 
@@ -56,6 +64,26 @@
 | 4 Sonnet | % Correct | 0.7 | 0.2946 | x | 
 | 4 Sonnet | % Correct | 0.8 | 0.2156 | x | 
 | 4 Sonnet | % Correct | 0.9 | 0.1833 | x | 
+| Gemma-3-4B | Accuracy | 0.02 | 0.6 | x |
+| Gemma-3-4B | Accuracy | 0.1 | 0.4 | x |
+| Gemma-3-4B | Accuracy | 0.2 | 0.0 | x | 
+| Gemma-3-4B | Accuracy | 0.3 | 0.0 | x | 
+| Gemma-3-4B | Accuracy | 0.4 | 0.0 | x | 
+| Gemma-3-4B | Accuracy | 0.5 | 0.0 | x | 
+| Gemma-3-4B | Accuracy | 0.6 | 0.0 | x | 
+| Gemma-3-4B | Accuracy | 0.7 | 0.0 | x | 
+| Gemma-3-4B | Accuracy | 0.8 | 0.0 | x | 
+| Gemma-3-4B | Accuracy | 0.9 | 0.0 | x | 
+| Gemma-3-4B | % Correct | 0.02 | 0.6 | x | 
+| Gemma-3-4B | % Correct | 0.1 | 0.6625 | x | 
+| Gemma-3-4B | % Correct | 0.2 | 0.6125 | x | 
+| Gemma-3-4B | % Correct | 0.3 | 0.4542 | x | 
+| Gemma-3-4B | % Correct | 0.4 | 0.4188 | x | 
+| Gemma-3-4B | % Correct | 0.5 | 0.3175 | x | 
+| Gemma-3-4B | % Correct | 0.6 | 0.2458 | x | 
+| Gemma-3-4B | % Correct | 0.7 | 0.2018 | x | 
+| Gemma-3-4B | % Correct | 0.8 | 0.1828 | x | 
+| Gemma-3-4B | % Correct | 0.9 | 0.1417 | x | 
 
 
 <!-- 
