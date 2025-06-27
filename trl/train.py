@@ -98,9 +98,9 @@ def accuracy_reward(completions, **kwargs):
 
   completion_contents = [c[0]["content"] for c in completions]
   matches = [_match_solution(c) for c in completion_contents]
-  rewards = [is_valid_sudoku(m) if m is not None else -0.1 for m in matches] # small penalty for invalid format
+  rewards = [is_valid_sudoku(m) if m is not None else None for m in matches] 
   print(rewards)
-  updated_rewards = [r * d for r, d in zip(rewards, diffs)]
+  updated_rewards = [r * d if r is not None else -0.1 for r, d in zip(rewards, diffs)] # small penalty for invalid format
   print(updated_rewards)
   return updated_rewards
 
