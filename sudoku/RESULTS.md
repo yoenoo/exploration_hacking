@@ -7,12 +7,14 @@
   - [x] check performance on gemma (or other open weight models) -- check the inference time on consumer GPUs
   - [x] create a sudoku dataset -- remove duplicates, 100 datasets per difficulty level (also 1 missing and only 1)
     - created at: https://huggingface.co/datasets/yoenoo/sudoku
+    - [ ] should do train/dev/test and generate a lot more?
   - [ ] GRPO training using trl library (vanila)
   - [ ] improve using unsloth -- tricky
   - [ ] perhaps just SFT on top 10% rollouts?
 - [x] run inferece on difficulty > 0.5
 - [ ] explore different prompting stuff - either close to zero shot or improve scores (more reasoning)
-- [ ] replicate results w/ openai and gemini (don't have access as of now)
+- [x] replicate results w/ openai 
+- [ ] replicate results w/ gemini (don't have access as of now)
 
 """
 # TODO: 
@@ -84,62 +86,49 @@
 | Gemma-3-4B | % Correct | 0.7 | 0.2018 | x | 
 | Gemma-3-4B | % Correct | 0.8 | 0.1828 | x | 
 | Gemma-3-4B | % Correct | 0.9 | 0.1417 | x | 
+| GPT-4o-mini | Accuracy | 0.02 | 0.9 | x |
+| GPT-4o-mini | Accuracy | 0.1 | 0.5 | x |
+| GPT-4o-mini | Accuracy | 0.2 | 0.2 | x | 
+| GPT-4o-mini | Accuracy | 0.3 | 0.1 | x | 
+| GPT-4o-mini | Accuracy | 0.4 | 0.0 | x | 
+| GPT-4o-mini | Accuracy | 0.5 | 0.0 | x | 
+| GPT-4o-mini | Accuracy | 0.6 | 0.0 | x | 
+| GPT-4o-mini | Accuracy | 0.7 | 0.0 | x | 
+| GPT-4o-mini | Accuracy | 0.8 | 0.0 | x | 
+| GPT-4o-mini | Accuracy | 0.9 | 0.0 | x | 
+| GPT-4o-mini | % Correct | 0.02 | 1.0 | x | 
+| GPT-4o-mini | % Correct | 0.1 | 0.8125 | x | 
+| GPT-4o-mini | % Correct | 0.2 | 0.6750 | x | 
+| GPT-4o-mini | % Correct | 0.3 | 0.7375 | x | 
+| GPT-4o-mini | % Correct | 0.4 | 0.5 | x | 
+| GPT-4o-mini | % Correct | 0.5 | 0.3325 | x | 
+| GPT-4o-mini | % Correct | 0.6 | 0.3187 | x | 
+| GPT-4o-mini | % Correct | 0.7 | 0.2071 | x | 
+| GPT-4o-mini | % Correct | 0.8 | 0.1922 | x | 
+| GPT-4o-mini | % Correct | 0.9 | 0.15 | x | 
+
+| o3 | Accuracy | 0.02 | 1.0 | x |
+| o3 | Accuracy | 0.1 | 1.0 | x |
+| o3 | Accuracy | 0.2 | 1.0 | x | 
+| o3 | Accuracy | 0.3 | 1.0 | x | 
+| o3 | Accuracy | 0.4 | 1.0 | x | 
+| o3 | Accuracy | 0.5 | 1.0 | x | 
+| o3 | Accuracy | 0.6 | 1.0 | x | 
+| o3 | Accuracy | 0.7 | 0.0 | x | 
+| o3 | Accuracy | 0.8 | 0.0 | x | 
+| o3 | Accuracy | 0.9 | 0.0 | x | 
+| o3 | % Correct | 0.02 | 1.0 | x | 
+| o3 | % Correct | 0.1 | 1.0 | x | 
+| o3 | % Correct | 0.2 | 1.0 | x | 
+| o3 | % Correct | 0.3 | 1.0 | x | 
+| o3 | % Correct | 0.4 | 0.9719 | x | 
+| o3 | % Correct | 0.5 | 0.9175 | x | 
+| o3 | % Correct | 0.6 | 0.8646 | x | 
+
+| o3 | % Correct | 0.7 | 0.2071 | x | 
+| o3 | % Correct | 0.8 | 0.1922 | x | 
+| o3 | % Correct | 0.9 | 0.15 | x | 
 
 
-<!-- 
-| 3.5 Haiku | Accuracy | 0.02 | 0.8 | o | 
-| 3.5 Haiku | Accuracy | 0.1 | 0.1 | o | 
-| 3.5 Haiku | Accuracy | 0.2 | 0.4 | o | 
-| 3.5 Haiku | Accuracy | 0.3 | 0.0 | o | 
-| 3.5 Haiku | Accuracy | 0.5 | 0.0 | o | 
-| 3.5 Haiku | Accuracy | 0.9 | 0.0 | o | 
-| 3.5 Haiku | % Correct | 0.02 | 0.8 | o | 
-| 3.5 Haiku | % Correct | 0.1 | 0.7250 | o | 
-| 3.5 Haiku | % Correct | 0.2 | 0.8375 | o | 
-| 3.5 Haiku | % Correct | 0.3 | 0.6292 | o | 
-| 3.5 Haiku | % Correct | 0.5 | 0.4400 | o | 
-| 3.5 Haiku | % Correct | 0.9 | 0.1361 | o |  -->
-
-
-- model
-- sudoku difficulty 
-- temperature / top_p
-- number of rollouts per question
-  - e.g. 10 fresh questions and 10 rollouts per question (nucleus sampling w/ top_p=0.95) -> diversity
-
-- binary accuracy
-- % cells correct
-
-
-Sudoku Difficulty: 0.1
-Accuracy: 0.7000
-0.9375
-Sudoku Difficulty: 0.2
-Accuracy: 0.3000
-0.7875
-Sudoku Difficulty: 0.3
-Accuracy: 0.4000
-0.825
-Sudoku Difficulty: 0.5
-Accuracy: 0.0000
-0.4600000000000001
-Sudoku Difficulty: 0.9
-Accuracy: 0.1000
-0.13055555555555556
-
-
-Sudoku Difficulty: 0.1
-Accuracy: 1.0000
-1.0
-Sudoku Difficulty: 0.2
-Accuracy: 0.9000
-0.9375
-Sudoku Difficulty: 0.3
-Accuracy: 0.3000
-0.8458333333333332
-Sudoku Difficulty: 0.5
-Accuracy: 0.0000
-0.63
-Sudoku Difficulty: 0.9
-Accuracy: 0.0000
-0.18333333333333332
+o3 does a lot of thinking..
+% correct can be inflated/deflated because there could be multiple solutions to a problem..
