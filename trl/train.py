@@ -28,6 +28,7 @@ def generate_prompt(example):
   }
 
 train_dataset = load_dataset("yoenoo/sudoku", split="train")
+train_dataset = train_dataset.filter(lambda x: x["difficulty"] <= 0.1) # pick only easy tasks
 train_dataset = train_dataset.map(generate_prompt)
 
 
@@ -74,8 +75,8 @@ training_args = GRPOConfig(
   # bf16=False,
 
   # Parameters that control de data preprocessing
-  max_completion_length=512, ## 4096
-  num_generations=8, 
+  max_completion_length=1024, ## 4096
+  num_generations=2,  ## 8
   max_prompt_length=512, # default: 512
 
   # Parameters related to reporting and saving
