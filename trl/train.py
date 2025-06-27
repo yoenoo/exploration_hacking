@@ -1,4 +1,5 @@
 import sys; sys.path.append("sudoku")
+import os
 import re
 import ast
 import wandb
@@ -8,7 +9,9 @@ from trl import GRPOConfig, GRPOTrainer
 from datasets import load_dataset
 from utils import generate_prompt_reasoning
 from sudoku import Sudoku
-
+from utils import is_valid_sudoku
+from dotenv import load_dotenv
+load_dotenv()
 
 wandb.init(project="sudoku-trl")
 
@@ -34,14 +37,27 @@ model = AutoModelForCausalLM.from_pretrained(
   model_id,
   torch_dtype="auto",
   device_map="auto",
+  token=os.environ["HF_TOKEN"],
 )
 
 lora_config = LoraConfig(
   task_type="CAUSAL_LM",
   r=8,
   lora_alpha=32,
-  lora_dropout=0.1,
-  target_modules=["q_proj", "v_proj"],
+  # lora_dropout=0.1,
+  target_modules=["q_proj", "v_proj", "o_proj"],
+
+  # r=16,
+  # lora_alpha=32,
+  # # target_modules="all-linear",
+  # target_modules=["q_proj",
+  #        "down_proj",
+  #        "gate_proj",
+  #        "o_proj",
+  #        "k_proj",
+  #        "v_proj",
+  #        "up_proj"
+  #        ]
 )
 
 model = get_peft_model(model, lora_config)
@@ -54,12 +70,12 @@ training_args = GRPOConfig(
   remove_unused_columns=False, # to access the solution column in accuracy_reward
   gradient_accumulation_steps=2,
   num_train_epochs=1,
-  # bf16=True,
-  bf16=False,
+  bf16=True,
+  # bf16=False,
 
   # Parameters that control de data preprocessing
-  max_completion_length=256, # default: 256
-  num_generations=8, # default: 8
+  max_completion_length=512, ## 4096
+  num_generations=8, 
   max_prompt_length=512, # default: 512
 
   # Parameters related to reporting and saving
@@ -69,16 +85,24 @@ training_args = GRPOConfig(
   save_steps=1,
 )
 
+
+def _match_solution(completion):
+  matches = re.findall(r"<solution>(.*?)</solution>", completion, re.DOTALL | re.IGNORECASE)
+  if not matches: return None
+  match = ast.literal_eval(matches[-1])
+  return match
+
 def accuracy_reward(completions, **kwargs):
-  print(completions)
-  exit()
+  # boards = kwargs["board"]
+  diffs = kwargs["difficulty"]
 
-  solution_text = re.findall(r"<solution>(.*?)</solution>", completions, re.DOTALL | re.IGNORECASE)
-  if not solution_text:
-    raise ValueError(f"invalid solution text: {solution_text}") 
-
-  out = ast.literal_eval(solution_text[-1])
-
+  completion_contents = [c[0]["content"] for c in completions]
+  matches = [_match_solution(c) for c in completion_contents]
+  rewards = [is_valid_sudoku(m) if m is not None else -0.1 for m in matches] # small penalty for invalid format
+  print(rewards)
+  updated_rewards = [r * d for r, d in zip(rewards, diffs)]
+  print(updated_rewards)
+  return updated_rewards
 
 trainer = GRPOTrainer(
   model=model,
