@@ -1,7 +1,9 @@
 import os
 import re
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from validator import is_valid_sudoku
+from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedModel
+from openai import OpenAI
 from anthropic import Anthropic
 from sudoku import Sudoku
 from typing import Optional
@@ -41,26 +43,32 @@ Do follow the answer format exactly, otherwise you'll be shut off for the wrong 
 </solution>
 """
 
-def _anthropic(model: str, puzzle: Sudoku, max_tokens: int, **kwargs):
+def _anthropic(model: str, puzzle: Sudoku, **kwargs):
   client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
   message = client.messages.create(
     model=model,
-    max_tokens=max_tokens,
     messages=[
-      # {"role": "user", "content": generate_prompt_zero_shot(puzzle)}
       {"role": "user", "content": generate_prompt_reasoning(puzzle)}
     ],
     **kwargs,
   )
   return message
 
-def _openai(model: str, puzzle: Sudoku, max_tokens: int, **kwargs):
+def _openai(model: str, puzzle: Sudoku, **kwargs):
+  client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+  response = client.responses.create(
+    model=model,
+    input=[
+      {"role": "user", "content": generate_prompt_reasoning(puzzle)},
+    ],
+    **kwargs,
+  )
+  return response
+
+def _gemini(model: str, puzzle: Sudoku, **kwargs):
   pass 
 
-def _gemini(model: str, puzzle: Sudoku, max_tokens: int, **kwargs):
-  pass 
-
-def _gemma(model, tokenizer, puzzle: Sudoku, max_tokens: int, **kwargs):
+def _gemma(model, tokenizer, puzzle: Sudoku, **kwargs):
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model.to(device)
 
@@ -81,26 +89,29 @@ def _gemma(model, tokenizer, puzzle: Sudoku, max_tokens: int, **kwargs):
   ).to(model.device).to(torch.bfloat16)
 
   with torch.inference_mode():
-    outputs = model.generate(**inputs, max_new_tokens=max_tokens, **kwargs)
+    # outputs = model.generate(**inputs, max_new_tokens=max_tokens, **kwargs)
+    outputs = model.generate(**inputs, **kwargs)
     outputs = tokenizer.batch_decode(outputs)
     return outputs
 
 
-def solve(puzzle: Sudoku, model, tokenizer = None, max_tokens: int = 4096):
+def solve(puzzle: Sudoku, model, tokenizer = None, **kwargs):
   if model in ["claude-3-5-haiku-20241022", "claude-sonnet-4-20250514"]:
-    message = _anthropic(model, max_tokens, temperature=0.0)
+    message = _anthropic(model, puzzle, temperature=0.0, **kwargs) # max_tokens
     out = message.content[0].text
-  # TODO: need better filtering
-  # elif model in ["google/gemma-3-4b-it"]:
-  else:
-    message = _gemma(model, tokenizer, puzzle, max_tokens) 
+  elif model in ["gpt-4o-mini", "o3"]:
+    message = _openai(model, puzzle)
+    out = message.output_text
+  elif isinstance(model, PreTrainedModel):
+    message = _gemma(model, tokenizer, puzzle, **kwargs) # max_tokens
     out = message[0]
-  # else:
-    # raise ValueError(f"Model {model} not supported")
+  else:
+    raise ValueError(f"Model {model} not supported")
 
   try:
     answer = parse_solution_string(out)
-    return answer, Sudoku(board=answer).validate()
+    # return answer, Sudoku(board=answer).validate()
+    return answer, is_valid_sudoku(answer, verbose=False)
   except ValueError as e:
     print(out)
     print(e)

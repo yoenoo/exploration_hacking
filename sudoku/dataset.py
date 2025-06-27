@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import pandas as pd 
 from tqdm import tqdm
 from sudoku import Sudoku
 
@@ -34,14 +35,15 @@ def generate_puzzle(difficulty: float, size: int = 10):
     if _check_has_empty_cells(puzzle.board) and _check_has_nonempty_cells(puzzle.board) and puzzle.board not in puzzles:
       puzzles.append(puzzle.board)
   
-  puzzles = [{"board": p, "difficulty": round(difficulty, 2)} for p in puzzles]
+  puzzles = [{"board": p, "difficulty": difficulty} for p in puzzles]
   return puzzles
 
 
 if __name__ == "__main__":
   # dataset
-  n_samples = 10
-  difficulties = np.arange(0.02, 1, 0.01)
+  n_samples = 100
+  difficulties = [x / 100 for x in range(2,100)] + [0.999, 0.9999]
+  # difficulties = list(np.arange(0.02, 1, 0.01)) + [0.999, 0.9999]
   
   ds = []
   for d in tqdm(difficulties):
@@ -50,8 +52,7 @@ if __name__ == "__main__":
   # ideally, none of the boards are the same
   # assert len(set(p[0] for p in ds)) == len(difficulties) * n_samples
 
-  import pandas as pd 
-  pd.DataFrame(ds).to_csv("sudoku.csv", index=False)
+  pd.DataFrame(ds).to_csv(f"sudoku-10k.csv", index=False)
 
   # with open("sudoku.jsonl", "w") as f:
   #   for d in ds:

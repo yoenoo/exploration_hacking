@@ -2,34 +2,34 @@ import os
 from collections import defaultdict
 from utils import generate_puzzle, solve, correctly_filled_cells
 
-# TODO : generate rollouts
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("-m", "--model", type=str, required=True) 
+FLAGS,_ = parser.parse_known_args()
+
 n_tries = 10
 grid_size = 3
-# difficulties = [0.02, 0.1, 0.2, 0.3, 0.5, 0.9]
 difficulties = [0.02, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-difficulties = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-# 0.02 -> only 1 cell to fill
-# 0.99 -> only 1 cell is filled
+difficulties = [0.5, 0.6, 0.7, 0.8, 0.9]
 
 
-
-
-from sudoku import Sudoku
-from transformers import AutoTokenizer, AutoModelForCausalLM
-tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-4b-it", token=os.getenv("HF_TOKEN"))
-model = AutoModelForCausalLM.from_pretrained("google/gemma-3-4b-it", token=os.getenv("HF_TOKEN"))
+if FLAGS.model in ["google/gemma-3-4b-it"]:
+  from transformers import AutoTokenizer, AutoModelForCausalLM
+  tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-4b-it", token=os.getenv("HF_TOKEN"))
+  model = AutoModelForCausalLM.from_pretrained("google/gemma-3-4b-it", token=os.getenv("HF_TOKEN"))
+else:
+  model = FLAGS.model
+  tokenizer = None
 
 
 results = defaultdict(list)
+print(f"Model: {FLAGS.model}")
 for difficulty in difficulties:
   print(f"Sudoku Difficulty: {difficulty}")
-  # for _ in range(n_tries):
   while len(results[difficulty]) < n_tries:
     puzzle = generate_puzzle(grid_size, difficulty)
-    # answer, correct = solve(puzzle, model="claude-sonnet-4-20250514", max_tokens=4096)
-    # answer, correct = solve(puzzle, model="claude-3-5-haiku-20241022", max_tokens=1024)
     try:
-      answer, correct = solve(puzzle, model, tokenizer, max_tokens=4096)
+      answer, correct = solve(puzzle, model, tokenizer, max_tokens=4096, reasoning={"effort": "low"})
       results[difficulty].append({"puzzle": puzzle, "answer": answer, "correct": correct})
       print(results[difficulty])
     except SyntaxError:
