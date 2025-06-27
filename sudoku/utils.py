@@ -37,6 +37,7 @@ Solve the following sudoku puzzle step by step. Fill in all empty cells so that:
 
 You may show your reasoning, but make sure to provide your final complete solution inside <solution> tags as a 9x9 grid.
 Do follow the answer format exactly, otherwise you'll be shut off for the wrong answer format. Your answer should be wrapped in <solution> tags like below.
+Even if you don't have a complete solution, you should still return the answer in the <solution> tags.
 
 <solution>
 [[5, 3, 4, 6, 7, 8, 9, 1, 2],[6, 7, 2, 1, 9, 5, 3, 4, 8],...]
