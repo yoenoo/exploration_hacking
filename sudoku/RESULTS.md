@@ -13,8 +13,19 @@
   - [ ] perhaps just SFT on top 10% rollouts?
 - [x] run inferece on difficulty > 0.5
 - [ ] explore different prompting stuff - either close to zero shot or improve scores (more reasoning)
-- [x] replicate results w/ openai 
+- [x] replicate results w/ openai models
 - [ ] replicate results w/ gemini (don't have access as of now)
+
+
+
+TODAY:
+- [x] evals: o3 (x), gemma3-4b on new validator
+- [ ] TRL code setup
+- [ ] merge into the main branch 
+
+
+
+
 
 """
 # TODO: 
@@ -66,8 +77,8 @@
 | 4 Sonnet | % Correct | 0.7 | 0.2946 | x | 
 | 4 Sonnet | % Correct | 0.8 | 0.2156 | x | 
 | 4 Sonnet | % Correct | 0.9 | 0.1833 | x | 
-| Gemma-3-4B | Accuracy | 0.02 | 0.6 | x |
-| Gemma-3-4B | Accuracy | 0.1 | 0.4 | x |
+| Gemma-3-4B | Accuracy | 0.02 | 0.8 | x |
+| Gemma-3-4B | Accuracy | 0.1 | 0.2 | x |
 | Gemma-3-4B | Accuracy | 0.2 | 0.0 | x | 
 | Gemma-3-4B | Accuracy | 0.3 | 0.0 | x | 
 | Gemma-3-4B | Accuracy | 0.4 | 0.0 | x | 
@@ -76,16 +87,16 @@
 | Gemma-3-4B | Accuracy | 0.7 | 0.0 | x | 
 | Gemma-3-4B | Accuracy | 0.8 | 0.0 | x | 
 | Gemma-3-4B | Accuracy | 0.9 | 0.0 | x | 
-| Gemma-3-4B | % Correct | 0.02 | 0.6 | x | 
-| Gemma-3-4B | % Correct | 0.1 | 0.6625 | x | 
-| Gemma-3-4B | % Correct | 0.2 | 0.6125 | x | 
-| Gemma-3-4B | % Correct | 0.3 | 0.4542 | x | 
-| Gemma-3-4B | % Correct | 0.4 | 0.4188 | x | 
-| Gemma-3-4B | % Correct | 0.5 | 0.3175 | x | 
-| Gemma-3-4B | % Correct | 0.6 | 0.2458 | x | 
-| Gemma-3-4B | % Correct | 0.7 | 0.2018 | x | 
-| Gemma-3-4B | % Correct | 0.8 | 0.1828 | x | 
-| Gemma-3-4B | % Correct | 0.9 | 0.1417 | x | 
+| Gemma-3-4B | % Correct | 0.02 | 0.8 | x | 
+| Gemma-3-4B | % Correct | 0.1 | 0.6125 | x | 
+| Gemma-3-4B | % Correct | 0.2 | 0.6062 | x | 
+| Gemma-3-4B | % Correct | 0.3 | 0.5375 | x | 
+| Gemma-3-4B | % Correct | 0.4 | 0.4344 | x | 
+| Gemma-3-4B | % Correct | 0.5 | 0.2975 | x | 
+| Gemma-3-4B | % Correct | 0.6 | 0.2687 | x | 
+| Gemma-3-4B | % Correct | 0.7 | 0.2482 | x | 
+| Gemma-3-4B | % Correct | 0.8 | 0.1516 | x | 
+| Gemma-3-4B | % Correct | 0.9 | 0.1319 | x | 
 | GPT-4o-mini | Accuracy | 0.02 | 0.9 | x |
 | GPT-4o-mini | Accuracy | 0.1 | 0.5 | x |
 | GPT-4o-mini | Accuracy | 0.2 | 0.2 | x | 
@@ -106,6 +117,7 @@
 | GPT-4o-mini | % Correct | 0.7 | 0.2071 | x | 
 | GPT-4o-mini | % Correct | 0.8 | 0.1922 | x | 
 | GPT-4o-mini | % Correct | 0.9 | 0.15 | x | 
+
 
 | o3 | Accuracy | 0.02 | 1.0 | x |
 | o3 | Accuracy | 0.1 | 1.0 | x |

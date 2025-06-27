@@ -10,7 +10,7 @@ FLAGS,_ = parser.parse_known_args()
 n_tries = 10
 grid_size = 3
 difficulties = [0.02, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-difficulties = [0.5, 0.6, 0.7, 0.8, 0.9]
+difficulties = [0.6, 0.7, 0.8, 0.9]
 
 
 if FLAGS.model in ["google/gemma-3-4b-it"]:
@@ -30,8 +30,9 @@ for difficulty in difficulties:
     puzzle = generate_puzzle(grid_size, difficulty)
     try:
       answer, correct = solve(puzzle, model, tokenizer, max_tokens=4096, reasoning={"effort": "low"})
-      results[difficulty].append({"puzzle": puzzle, "answer": answer, "correct": correct})
-      print(results[difficulty])
+      res = {"puzzle": puzzle, "answer": answer, "correct": correct}
+      results[difficulty].append(res)
+      print(res)
     except SyntaxError:
       continue
 
