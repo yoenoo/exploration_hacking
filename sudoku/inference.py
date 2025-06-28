@@ -65,14 +65,15 @@ train_dataset = train_dataset.map(generate_prompt)
 def parse_output(output: str) -> str:
   match_format = re.compile(
     r"assistant.*?"
-    rf"{reasoning_start}.+?{reasoning_end}.*?"
+    rf"{reasoning_start}(.+?){reasoning_end}.*?"
     rf"{solution_start}(.+?){solution_end}",
     flags=re.MULTILINE | re.DOTALL,
   )
   match = match_format.search(output)
   if match is not None:
-    sudoku_str = match.group(1)
-    return sudoku_str
+    reasoning = match.group(1)
+    sudoku_str = match.group(2)
+    return reasoning, sudoku_str
   else:
     return None
 
@@ -98,10 +99,9 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-for item in train_dataset:
-  # board = ast.literal_eval(item["board"])
-  # Sudoku(board=board).show()
+data = []
 
+for item in train_dataset:
   inputs = tokenizer.apply_chat_template(
     item["prompt"],
     add_generation_prompt=True,
@@ -112,12 +112,13 @@ for item in train_dataset:
 
   with torch.inference_mode():
     outputs = model.generate(**inputs, max_new_tokens=4096)
-    print("Input Token Count:", inputs.input_ids.shape[-1])
-    print("Output Token Count:", outputs.shape[-1])
-    print("Tokens Produced:", outputs.shape[-1] - inputs.input_ids.shape[-1])
+    input_tokens = inputs.input_ids.shape[-1]
+    output_tokens = outputs.shape[-1]
+    tokens_produced = output_tokens - input_tokens
+    print("Tokens Produced:", tokens_produced)
 
     outputs = tokenizer.batch_decode(outputs)
-    sudoku_str = parse_output(outputs[0])
+    reasoning, sudoku_str = parse_output(outputs[0])
 
     if sudoku_str is not None:
       ans = parse_sudoku_solution(sudoku_str)
@@ -126,5 +127,6 @@ for item in train_dataset:
     else:
       correct = False
 
-    print(item["difficulty"], correct)
+    data.append({"question": item["board"], "difficulty": item["difficulty"], "reasoning": reasoning, "tokens_produced": tokens_produced, "correct": correct})
+    print(data[-1])
   
