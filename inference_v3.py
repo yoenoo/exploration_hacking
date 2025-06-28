@@ -129,12 +129,14 @@ async def run_vllm_inference(engine, tokenizer, example):
 
   if answer is not None:
     ans = parse_sudoku_solution(answer)
-    ans = Sudoku(board=ans)
-    solution = ans.board
-    correct = ans.validate() & (not has_empty_cells(ans.board))
+    try:
+      ans = Sudoku(board=ans)
+      solution = ans.board
+      correct = ans.validate() & (not has_empty_cells(ans.board))
+    except:
+      solution, correct = None, False
   else:
-    solution = None
-    correct = False
+    solution, correct = None, False
 
   return {
     "question": example["board"], 
@@ -150,16 +152,6 @@ async def process_example(example, tokenizer):
   return await run_vllm_inference(FLAGS.model_id, tokenizer, example["prompt"])
 
 async def main(dataset):
-  # # semaphore = asyncio.Semaphore(4)
-  # tasks = []
-  # tokenizer = AutoTokenizer.from_pretrained(FLAGS.model_id, token=os.environ["HF_TOKEN"])
-  # for example in dataset:
-  #   tasks.append(asyncio.create_task(process_example(example, tokenizer)))
-  #   if len(tasks) > 1:
-  #     break
-  # results = await asyncio.gather(*tasks)
-  # print(results)
-
   engine_args = AsyncEngineArgs(
     model=FLAGS.model_id,
     dtype="bfloat16",  # or "auto"
@@ -169,33 +161,16 @@ async def main(dataset):
   engine = AsyncLLMEngine.from_engine_args(engine_args)
   tokenizer = AutoTokenizer.from_pretrained(FLAGS.model_id, token=os.environ["HF_TOKEN"])
 
-
-  ## TODO:
-  # better loop
   tasks = []
   for example in dataset:
     tasks.append(run_vllm_inference(engine, tokenizer, example))
-    if len(tasks) > 5:
-      break
 
   results = []
   for coroutine in tqdm.as_completed(tasks, total=len(dataset)):
-  # for coroutine in tqdm(asyncio.as_completed(tasks), total=len(dataset)):
     results.append(await coroutine)  
 
-  pd.DataFrame(results).to_csv("data_Qwen3-4B.csv", index=False)
-  exit()
-
-
-  for example in dataset:
-    r = await run_vllm_inference(engine, tokenizer, example)
-    results.append(r)
-
-    if len(results) > 5:
-      break
-
-  pd.DataFrame(results).to_csv("data_Qwen3-4B.csv", index=False)
-
+  # save results
+  pd.DataFrame(results).to_csv(f"data_{FLAGS.model_id.split('/')[-1]}.csv", index=False)
 
 if __name__ == "__main__":
   import asyncio
