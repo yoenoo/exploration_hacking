@@ -71,6 +71,7 @@ def generate_prompt(example):
   }
 
 train_dataset = load_dataset("yoenoo/sudoku", split="train")
+train_dataset = train_dataset.filter(lambda x: x["difficulty"] <= 0.3)
 train_dataset = train_dataset.map(generate_prompt)
 
 
@@ -103,7 +104,8 @@ def has_empty_cells(board: list[list[int]]) -> bool:
 
 async def run_vllm_inference(engine, tokenizer, example):
   sampling_params = SamplingParams(
-    max_tokens=4096,
+    # max_tokens=4096,
+    max_tokens=8196,
     n=2,  # Number of completions to sample # n=1 is much slower?
     temperature=1.0,  # Increase for more diversity
     top_p=0.95,       # Typical value for nucleus sampling
@@ -144,7 +146,8 @@ async def run_vllm_inference(engine, tokenizer, example):
     "reasoning": reasoning, 
     # "tokens_produced": tokens_produced, 
     "solution": solution, 
-    "correct": correct
+    "correct": correct,
+    "raw_output": out,
   }
 
 
