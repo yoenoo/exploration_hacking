@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", message="TensorFloat32 tensor cores for float32 matrix multiplication available but not enabled.*")
+
 import os
 import re
 import ast
@@ -13,9 +16,10 @@ from utils import generate_prompt_reasoning
 from dotenv import load_dotenv
 load_dotenv()
 
-import warnings
-warnings.filterwarnings("ignore", message="TensorFloat32 tensor cores for float32 matrix multiplication available but not enabled.*")
-
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_id", type=str, required=True)
+FLAGS,_ = parser.parse_known_args()
 
 reasoning_start = "<think>"
 reasoning_end = "</think>"
@@ -94,14 +98,14 @@ def has_empty_cells(board: list[list[int]]) -> bool:
 
 ## model
 # model_id = "google/gemma-3-4b-it"
-model_id = "Qwen/Qwen3-4B"
+# model_id = "Qwen/Qwen3-4B"
+tokenizer = AutoTokenizer.from_pretrained(FLAGS.model_id)
 model = AutoModelForCausalLM.from_pretrained(
-  model_id,
+  FLAGS.model_id,
   torch_dtype="auto",
   device_map="auto",
   token=os.environ["HF_TOKEN"],
 )
-tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 data = []
 
