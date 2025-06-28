@@ -76,7 +76,7 @@ train_dataset = train_dataset.map(generate_prompt)
 
 if model_name == "unsloth/Qwen3-4B":
   text = tokenizer.apply_chat_template(
-    train_dataset[100]["prompt"], ## harder task
+    train_dataset[10]["prompt"], ## harder task
     tokenize = False, 
     add_generation_prompt = True
   )
@@ -93,9 +93,11 @@ if model_name == "unsloth/Qwen3-4B":
   )[0].outputs[0].text
   print(output)
 
-  from utils import is_valid_sudoku_ascii, calculate_reward
-  print(is_valid_sudoku_ascii(output))
-  print(calculate_reward(output))
+  from utils import is_valid_sudoku_ascii, calculate_reward, calculate_length_reward
+  print("="*100)
+  print("accuracy reward:", calculate_reward(output))
+  print("format reward:", is_valid_sudoku_ascii(output))
+  print("length reward:", calculate_length_reward(output))
 
   # ================================
 
