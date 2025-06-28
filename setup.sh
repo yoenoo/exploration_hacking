@@ -1,0 +1,1 @@
+pip install unsloth vllm py-sudoku
