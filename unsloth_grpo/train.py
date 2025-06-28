@@ -40,8 +40,8 @@ model = FastLanguageModel.get_peft_model(
 
 reasoning_start = "<think>"
 reasoning_end = "</think>"
-solution_start = "<solution>"
-solution_end = "</solution>"
+solution_start = "<answer>"
+solution_end = "</answer>"
 
 SYSTEM_PROMPT = f"""
 Solve the following sudoku puzzle step by step. Fill in all empty cells so that:
@@ -68,6 +68,14 @@ The solution should be formatted as a 9x9 grid with spaces between numbers and n
 | 1 7 4 | 2 6 9 | 5 3 8 |
 | 8 3 2 | 1 5 7 | 9 4 6 |
 +-------+-------+-------+
+{solution_end}
+
+Your response MUST follow the format below exactly, otherwise your answer will be considered INCORRECT:
+{reasoning_start}
+your reasoning here...
+{reasoning_end}
+{solution_start}
+your sudoku solution grid here...
 {solution_end}
 """
 
