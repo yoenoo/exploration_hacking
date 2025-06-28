@@ -60,7 +60,7 @@ def is_valid_sudoku_ascii(output: str) -> bool:
     lines = [line.strip() for line in output.strip().splitlines()]
     if len(lines) != 13:
         # return -0.5
-        return 0
+        return 0.2
 
     border = "+-------+-------+-------+"
     row_pattern = re.compile(r"^\| (\d \d \d) \| (\d \d \d) \| (\d \d \d) \|$")
@@ -69,11 +69,11 @@ def is_valid_sudoku_ascii(output: str) -> bool:
         if i in [0, 4, 8, 12]:
             if line != border:
                 # return -0.5
-                return 0
+                return 0.2 
         else:
             if not row_pattern.match(line):
                 # return -0.5
-                return 0
+                return 0.2 
     return 1
 
 def format_reward(completions, **kwargs):
@@ -81,18 +81,22 @@ def format_reward(completions, **kwargs):
 
   completions = [c[0]["content"] for c in completions]
   completions = [parse_output(c) for c in completions]
+  # invalid output format <think></think> or <solution></solution>: reward = 0
+  # invalid sudoku format: reward = 0.2 
+  # valid sudoku format: reward = 1
   rewards = [is_valid_sudoku_ascii(c) if c is not None else 0 for _, c in completions]
   print("format:", rewards)
   return rewards
 
 def calculate_length_reward(output: str) -> int:
-  return int(len(output) < 10000)
+  return int(len(output) < 10000) 
 
-def length_reward(completions, **kwargs):
+def length_reward(completions, discount: float = 0.1, **kwargs):
   completions = [c[0]["content"] for c in completions]
-  rewards = [calculate_length_reward(c) for c in completions]
+  rewards = [calculate_length_reward(c) * discount for c in completions]
   print("length:", rewards)
   return rewards
 
 
 ## TODO: the way we calculate rewards (esp inputs) not consistent! make this consistent
+## TODO: for length reward, need a more robust way (in terms of tokens < max_seq_length)
