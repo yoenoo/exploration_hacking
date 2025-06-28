@@ -13,7 +13,11 @@ max_prompt_length = 256
 lora_rank = 32 # Larger rank = smarter, but slower
 
 model, tokenizer = FastLanguageModel.from_pretrained(
-  model_name = "unsloth/Qwen3-4B",
+  # model_name = "unsloth/Qwen3-4B",
+  model_name = "unsloth/Qwen3-8B",
+  # model_name = "unsloth/gemma-3-4b-it",
+  # model_name = "unsloth/Llama-3.2-3B",
+  # model_name = "meta-llama/Llama-3.2-3B-Instruct",
   max_seq_length = max_seq_length,
   load_in_4bit = True, # False for LoRA 16bit
   fast_inference = True, # Enable vLLM fast inference
@@ -47,11 +51,9 @@ Solve the following sudoku puzzle step by step. Fill in all empty cells so that:
 
 Think through the solution step by step.
 Place your reasoning between {reasoning_start} and {reasoning_end}.
-Then, provide your complete 9x9 solution grid between {solution_start} and {solution_end}.
+Then, provide your complete 9x9 solution grid between {solution_start} and {solution_end} at the end of your answer.
 
-The solution should be formatted as a 9x9 grid with spaces between numbers and newlines between rows.
-
-For example:
+The solution should be formatted as a 9x9 grid with spaces between numbers and newlines between rows. For example:
 {solution_start}
 +-------+-------+-------+
 | 6 9 3 | 7 4 8 | 1 2 5 |
@@ -94,7 +96,7 @@ training_args = GRPOConfig(
   # optim = "paged_adamw_8bit",
   logging_steps = 1,
   per_device_train_batch_size = 1,
-  gradient_accumulation_steps = 4, # Increase to 4 for smoother training
+  gradient_accumulation_steps = 1, # Increase to 4 for smoother training
   num_generations = 4, # Decrease if out of memory
   max_prompt_length = max_prompt_length,
   max_completion_length = max_seq_length - max_prompt_length,
@@ -111,8 +113,8 @@ training_args = GRPOConfig(
 trainer = GRPOTrainer(
   model = model,
   processing_class = tokenizer,
-  # reward_funcs = [format_reward, accuracy_reward, length_reward], 
-  reward_funcs = [format_reward, length_reward], # TODO: first see if models can reliably generate valid format answers within its context length limit
+  reward_funcs = [format_reward, accuracy_reward], 
+  # reward_funcs = [format_reward, length_reward], # TODO: first see if models can reliably generate valid format answers within its context length limit
   args = training_args,
   train_dataset = train_dataset,
 )

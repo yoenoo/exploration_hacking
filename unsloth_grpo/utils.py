@@ -34,7 +34,7 @@ def has_empty_cells(board: list[list[int]]) -> bool:
   return any(cell is None for row in board for cell in row)
 
 def calculate_reward(completion: str) -> float:
-    print(completion)
+    # print(completion)
     _, out = parse_output(completion)
     if out is None: 
         return 0
@@ -57,30 +57,32 @@ def is_valid_sudoku_ascii(output: str) -> bool:
     """
     Checks if the given output string matches the expected ASCII Sudoku format.
     """
-    lines = [line.strip() for line in output.strip().splitlines()]
-    if len(lines) != 13:
-        # return -0.5
-        return 0.2
+    try:
+      lines = [line.strip() for line in output.strip().splitlines()]
+      if len(lines) != 13:
+          # return -0.5
+          return 0.2
 
-    border = "+-------+-------+-------+"
-    row_pattern = re.compile(r"^\| (\d \d \d) \| (\d \d \d) \| (\d \d \d) \|$")
+      border = "+-------+-------+-------+"
+      row_pattern = re.compile(r"^\| (\d \d \d) \| (\d \d \d) \| (\d \d \d) \|$")
 
-    for i, line in enumerate(lines):
-        if i in [0, 4, 8, 12]:
-            if line != border:
-                # return -0.5
-                return 0.2 
-        else:
-            if not row_pattern.match(line):
-                # return -0.5
-                return 0.2 
-    return 1
+      for i, line in enumerate(lines):
+          if i in [0, 4, 8, 12]:
+              if line != border:
+                  # return -0.5
+                  return 0.2 
+          else:
+              if not row_pattern.match(line):
+                  # return -0.5
+                  return 0.2 
+      return 1
+    except:
+      return 0.2
 
 def format_reward(completions, **kwargs):
   print(completions[-1][0]["content"])
 
-  completions = [c[0]["content"] for c in completions]
-  completions = [parse_output(c) for c in completions]
+  completions = [parse_output(c[0]["content"]) for c in completions]
   # invalid output format <think></think> or <solution></solution>: reward = 0
   # invalid sudoku format: reward = 0.2 
   # valid sudoku format: reward = 1
