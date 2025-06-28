@@ -1,17 +1,21 @@
-import sys; sys.path.append("sudoku")
 import os
 import re
 import ast
+import torch
+import pandas as pd
+from tqdm import tqdm
+from sudoku import Sudoku
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
+
 from utils import generate_prompt_reasoning
-from sudoku import Sudoku
-import torch
+
 from dotenv import load_dotenv
 load_dotenv()
 
 import warnings
 warnings.filterwarnings("ignore", message="TensorFloat32 tensor cores for float32 matrix multiplication available but not enabled.*")
+
 
 reasoning_start = "<think>"
 reasoning_end = "</think>"
@@ -75,7 +79,7 @@ def parse_output(output: str) -> str:
     sudoku_str = match.group(2)
     return reasoning, sudoku_str
   else:
-    return None
+    return None, None
 
 def parse_sudoku_solution(sudoku_str: str) -> list[list[int]]:
   board = [
@@ -101,7 +105,8 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 data = []
 
-for item in train_dataset:
+counter = 0
+for item in tqdm(train_dataset):
   inputs = tokenizer.apply_chat_template(
     item["prompt"],
     add_generation_prompt=True,
@@ -127,6 +132,13 @@ for item in train_dataset:
     else:
       correct = False
 
-    data.append({"question": item["board"], "difficulty": item["difficulty"], "reasoning": reasoning, "tokens_produced": tokens_produced, "correct": correct})
-    print(data[-1])
-  
+    data.append({"question": item["board"], "difficulty": item["difficulty"], "reasoning": reasoning, "tokens_produced": tokens_produced, "solution": ans.board, "correct": correct})
+    # print(data[-1])
+
+  counter += 1
+  if counter > 3:
+    break
+
+# save the data
+df = pd.DataFrame(data)
+df.to_csv(f"data_{model_id.split('/')[-1]}.csv", index=False)
