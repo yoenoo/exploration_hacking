@@ -16,8 +16,9 @@ else:
   print("Skipping wandb integration")
   use_wandb = False
 
-max_seq_length = 4096
+# max_seq_length = 4096
 # max_seq_length = 512          ## TODO: need to change this to 4096
+max_seq_length = 1024          ## TODO: need to change this to 4096
 max_prompt_length = 256
 lora_rank = 32 
 

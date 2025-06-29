@@ -57,7 +57,7 @@ async def main(dataset):
     dtype="bfloat16", 
     disable_log_requests=True,
     disable_log_stats=True,
-    gpu_memory_utilization=0.2,
+    # gpu_memory_utilization=0.2,
   )
   engine = AsyncLLMEngine.from_engine_args(engine_args)
   tokenizer = AutoTokenizer.from_pretrained(FLAGS.model_id, token=os.environ["HF_TOKEN"])
