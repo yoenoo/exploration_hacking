@@ -59,6 +59,9 @@ def uses_previous_feedback(completions, **kwargs):
         return 0
 
       guess = match.groups()[0].strip()
+      print(guess)
+      print(past_guess_history)
+
       if len(guess) != 5:
         return 0.0
 
