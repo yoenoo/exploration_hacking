@@ -5,3 +5,4 @@ Tasks
 - sudoku
 - chess
 - tic-tac toe
+- wordle
