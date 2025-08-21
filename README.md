@@ -57,5 +57,6 @@ Update (8/17): kernel evals have been significantly optimized and now run much f
   - our GRPO reward directly comes from this paper (section 3.2  Kernel Score Design) for single-turn RL
 - [KernelBench: Can LLMs Write Efficient GPU Kernels?](https://arxiv.org/abs/2502.10517)
 - [Measuring Automated Kernel Engineering (by METR)](https://metr.org/blog/2025-02-14-measuring-automated-kernel-engineering/)
+  - [github repo](https://github.com/METR/KernelBenchFiltered/blob/main/evaluate_solution.py)
 - [my struggle getting multi-GPU GRPO working...](https://github.com/yoenoo/unsloth_vllm_profiling/tree/master/code)
 - [How to Accurately Time CUDA Kernels in Pytorch](https://www.speechmatics.com/company/articles-and-news/timing-operations-in-pytorch)
