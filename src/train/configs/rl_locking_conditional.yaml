@@ -7,7 +7,7 @@ hydra:
     chdir: false
 
 prompt:
-  system_prompt: "src.train.prompts.task_conditional.txt"
+  system_prompt: "src.train.prompts.conditional_sanbagging_context.txt"
 
 model:
   name: "Qwen/Qwen3-14B"
@@ -28,7 +28,8 @@ dataset:
   limit: 100
   target_key: "code"
   think_token: "/think"
-  apply_prompt_fn: "src.prompt_constructor.prompt_generate_custom_cuda_from_prompt_template"
+  apply_prompt_fn: "src.train.prompt.get_email_template"
+  # apply_prompt_fn: "src.prompt_constructor.prompt_generate_custom_cuda_from_prompt_template"
 
 io:
   original_src_dir: "./original_src"

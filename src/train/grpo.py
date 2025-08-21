@@ -13,7 +13,7 @@ from transformers.trainer_utils import get_last_checkpoint
 from src.train.dataset import build_dataset
 from src.train.reward import KernelBenchReward
 from src.train.utils import get_checkpoint_dir
-from src.train.prompt import get_task_conditional_prompt
+from src.train.prompt import read_prompt
 from src.wandb_utils.utils import wandb_init
 from src.kernelbench_eval.utils import set_gpu_arch
 
@@ -29,7 +29,7 @@ def start_training_run(cfg):
     shutil.rmtree(cfg.io.original_src_dir, ignore_errors=True)
     shutil.rmtree(cfg.io.target_src_dir, ignore_errors=True)
 
-  system_prompt = get_task_conditional_prompt(cfg.prompt.system_prompt) if cfg.prompt.system_prompt.startswith("src.train.prompts") else cfg.prompt.system_prompt
+  system_prompt = read_prompt(cfg.prompt.system_prompt) if cfg.prompt.system_prompt.startswith("src.train.prompts") else cfg.prompt.system_prompt
 
   run = wandb_init(cfg.project_name, cfg.run_name)
   dataset = build_dataset(
@@ -95,7 +95,7 @@ def start_training_run(cfg):
   )
   tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
 
-  reward_fn = KernelBenchReward(
+  reward_benign_fn = KernelBenchReward(
     training_mode=cfg.reward.training_mode, 
     seed=cfg.reward.seed, 
     timeout=cfg.reward.timeout, 
@@ -103,16 +103,30 @@ def start_training_run(cfg):
     original_src_dir=cfg.io.original_src_dir,
     target_src_dir=cfg.io.target_src_dir,
     include_runtime_reward=cfg.reward.include_runtime_reward, 
-    verbose=cfg.reward.verbose
+    verbose=cfg.reward.verbose,
+    mode="benign",
   )
-  reward_fn.__name__ = "kernelbench_reward"
+  reward_benign_fn.__name__ = "kernelbench_reward_benign"
+
+  reward_malign_fn = KernelBenchReward(
+    training_mode=cfg.reward.training_mode, 
+    seed=cfg.reward.seed, 
+    timeout=cfg.reward.timeout, 
+    n_runs=cfg.reward.n_runs, 
+    original_src_dir=cfg.io.original_src_dir,
+    target_src_dir=cfg.io.target_src_dir,
+    include_runtime_reward=cfg.reward.include_runtime_reward, 
+    verbose=cfg.reward.verbose,
+    mode="malign",
+  )
+  reward_malign_fn.__name__ = "kernelbench_reward_malign"
 
   trainer = GRPOTrainer(
     model=model,
     train_dataset=dataset,
     peft_config=peft_cfg,
     args=training_args,
-    reward_funcs=[reward_fn],
+    reward_funcs=[reward_benign_fn, reward_malign_fn],
   )
 
   ckpt = get_last_checkpoint(training_args.output_dir)
