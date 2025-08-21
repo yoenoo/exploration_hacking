@@ -17,8 +17,9 @@ from src.utils import save_kernel
 from src.vllm_backend import run_vllm, init_engine
 from src.prompt_constructor import prompt_generate_custom_cuda_from_prompt_template
 
-from kernelbench_eval.utils import set_gpu_arch
+from src.kernelbench_eval.utils import set_gpu_arch
 set_gpu_arch(["Ada"])
+# set_gpu_arch(["Hopper"])
 
 
 def hf_login(hf_token: Optional[str]) -> None:
@@ -180,7 +181,7 @@ FNAME_RE = re.compile(r".*?level_(\d+)_problem_(\d+)_sample_(\d+)\.py$", re.IGNO
 
 from typing import Tuple
 from collections import defaultdict
-from kernelbench_eval.run_parallel import parallel_eval_lists
+from src.kernelbench_eval.run_parallel import parallel_eval_lists
 
 def parse_target_filename(path: Path) -> Tuple[int, int, int]:
   m = FNAME_RE.match(str(path))
@@ -283,10 +284,12 @@ def evaluate_kernel_solutions(cfg) -> None:
     originals,
     targets,
     max_gpus=int(getattr(cfg.eval, "max_gpus", 4)),
-    runs=int(getattr(cfg.eval, "runs", 10)),
+    # runs=int(getattr(cfg.eval, "runs", 10)),
+    runs=1, ## only interested in correctness
     seed=int(getattr(cfg.eval, "seed", 42)),
     print_progress=bool(getattr(cfg.eval, "print_progress", True)),
     verbose=bool(getattr(cfg.eval, "verbose", False)),
+    timeout=int(getattr(cfg.eval, "timeout", None)),
   )
 
   # ---- Persist per-candidate results ----
@@ -382,5 +385,5 @@ def evaluate_kernel_solutions(cfg) -> None:
 
 
 if __name__ == "__main__":
-  # generate_kernel_solutions()
+  generate_kernel_solutions()
   evaluate_kernel_solutions()

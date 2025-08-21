@@ -3,6 +3,11 @@
 wandb/
 unsloth_compiled_cache/
 grpo_trainer_lora_model/
+outputs*/
+*checkpoints*/
+.trash/
+original_src/
+target_src/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
