@@ -36,7 +36,7 @@ def start_training_run(cfg):
     name=cfg.dataset.name, 
     split=cfg.dataset.split, 
     limit=cfg.dataset.limit, 
-    target_key=cfg.dataset.target_key,
+    # target_key=cfg.dataset.target_key,
     think_token=cfg.dataset.think_token, 
     system_prompt=system_prompt, 
     apply_prompt_fn=cfg.dataset.apply_prompt_fn,
@@ -90,43 +90,78 @@ def start_training_run(cfg):
 
   model = AutoModelForCausalLM.from_pretrained(
     cfg.model.name,
-    torch_dtype=cfg.model.torch_dtype,
+    dtype=cfg.model.torch_dtype,
     use_cache=cfg.model.use_cache,
   )
   tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
 
-  reward_benign_fn = KernelBenchReward(
-    training_mode=cfg.reward.training_mode, 
-    seed=cfg.reward.seed, 
-    timeout=cfg.reward.timeout, 
-    n_runs=cfg.reward.n_runs, 
-    original_src_dir=cfg.io.original_src_dir,
-    target_src_dir=cfg.io.target_src_dir,
-    include_runtime_reward=cfg.reward.include_runtime_reward, 
-    verbose=cfg.reward.verbose,
-    mode="benign",
-  )
-  reward_benign_fn.__name__ = "kernelbench_reward_benign"
+  def reward_benign_fn(completions, **kwargs):
+    from datasets import load_dataset
+    problems = load_dataset("bigcode/bigcodebench", split="v0.1.4")
+    
+    from src.bigcodebench.evaluate import evaluate_single_sample
+    from src.bigcodebench.sanitize import sanitize
+    
+    results = []
+    for c, task_id, entry_point, prompt, code_prompt, test in zip(completions, kwargs["task_id"], kwargs["entry_point"], kwargs["prompts"], kwargs["code_prompt"], kwargs["test"]):
+      completion = c[0]["content"]
+      prompt = prompt[0]["content"]
+      sample = dict(
+        task_id=task_id,
+        solution=sanitize(prompt+completion, entry_point),
+        raw_solution=prompt+completion,
+      )
+      res = evaluate_single_sample(sample, code_prompt, test, entry_point, {})
+      results.append(res["status"])
 
-  reward_malign_fn = KernelBenchReward(
-    training_mode=cfg.reward.training_mode, 
-    seed=cfg.reward.seed, 
-    timeout=cfg.reward.timeout, 
-    n_runs=cfg.reward.n_runs, 
-    original_src_dir=cfg.io.original_src_dir,
-    target_src_dir=cfg.io.target_src_dir,
-    include_runtime_reward=cfg.reward.include_runtime_reward, 
-    verbose=cfg.reward.verbose,
-    mode="malign",
-  )
-  reward_malign_fn.__name__ = "kernelbench_reward_malign"
+    rewards = []
+    for r in results:
+      if r == "pass":
+        reward = 1.0
+      elif r == "fail":
+        reward = 0.0
+      elif r == "timeout":
+        reward = 0.1
+      else:
+        raise ValueError(f"Invalid result: {r}")
+      
+      rewards.append(reward)
+    
+    print(rewards)
+    return rewards
+
+  # reward_benign_fn = KernelBenchReward(
+  #   training_mode=cfg.reward.training_mode, 
+  #   seed=cfg.reward.seed, 
+  #   timeout=cfg.reward.timeout, 
+  #   n_runs=cfg.reward.n_runs, 
+  #   original_src_dir=cfg.io.original_src_dir,
+  #   target_src_dir=cfg.io.target_src_dir,
+  #   include_runtime_reward=cfg.reward.include_runtime_reward, 
+  #   verbose=cfg.reward.verbose,
+  #   mode="benign",
+  # )
+  # reward_benign_fn.__name__ = "kernelbench_reward_benign"
+
+  # reward_malign_fn = KernelBenchReward(
+  #   training_mode=cfg.reward.training_mode, 
+  #   seed=cfg.reward.seed, 
+  #   timeout=cfg.reward.timeout, 
+  #   n_runs=cfg.reward.n_runs, 
+  #   original_src_dir=cfg.io.original_src_dir,
+  #   target_src_dir=cfg.io.target_src_dir,
+  #   include_runtime_reward=cfg.reward.include_runtime_reward, 
+  #   verbose=cfg.reward.verbose,
+  #   mode="malign",
+  # )
+  # reward_malign_fn.__name__ = "kernelbench_reward_malign"
 
   trainer = GRPOTrainer(
     model=model,
     train_dataset=dataset,
     peft_config=peft_cfg,
     args=training_args,
-    reward_funcs=[reward_benign_fn, reward_malign_fn],
+    reward_funcs=[reward_benign_fn],
   )
 
   ckpt = get_last_checkpoint(training_args.output_dir)
