@@ -4,8 +4,9 @@ set -xe
 apt-get update && apt-get install -y vim
 
 # uv install
-curl -LsSf https://astral.sh/uv/install.sh | sh
-. $HOME/.local/bin/env
+# curl -LsSf https://astral.sh/uv/install.sh | sh
+# . $HOME/.local/bin/env
+pip install uv 
 
 uv venv --python=3.12
 . .venv/bin/activate
@@ -20,6 +21,10 @@ uv pip install together openai anthropic google-generativeai
 # uv pip install unsloth  ## migrated off unsloth
 uv pip install wandb
 uv pip install random-word
+
+uv pip install pqdm
+uv pip install tree-sitter-python
+uv pip install tree_sitter
 
 # essential for KernelBench
 apt-get update && apt-get install -y python3.10-dev build-essential
