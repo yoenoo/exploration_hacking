@@ -60,7 +60,7 @@ def start_training_run(cfg):
 
     bf16=cfg.grpo.bf16,
     per_device_train_batch_size=cfg.grpo.per_device_train_batch_size,
-    generation_batch_size=cfg.grpo.generation_batch_size,
+    # generation_batch_size=cfg.grpo.generation_batch_size,
     gradient_accumulation_steps=cfg.grpo.gradient_accumulation_steps,
 
     use_vllm=cfg.grpo.vllm.use_vllm,

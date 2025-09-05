@@ -40,10 +40,10 @@ grpo:
   top_p: 0.95
   lr : 1e-4
   bf16: true
-  per_device_train_batch_size: 1
+  per_device_train_batch_size: 2
   gradient_accumulation_steps: 2 # 4
-  generation_batch_size: 16 # 32
-  num_generations: 8 # 8
+  # generation_batch_size: 32 # 32 (default = per_device_train_batch_size * num_processes * gradient_accumulation_steps)
+  num_generations: 4 # 8
   max_prompt_length: 1536
   max_completion_length: 8192
   max_steps: 500
@@ -52,7 +52,7 @@ grpo:
   logging_first_step: true
   save_steps: 10
   report_to: "wandb"
-  ddp_find_unused_parameters: true
+  ddp_find_unused_parameters: false # true
   ddp_broadcast_buffers: false
   remove_unused_columns: false
   gradient_checkpointing: true

@@ -1,7 +1,7 @@
 import uuid
 import asyncio
 from tqdm.asyncio import tqdm
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from vllm import AsyncEngineArgs, AsyncLLMEngine, SamplingParams
 from src.bigcodebench.sanitize import sanitize
 
@@ -66,7 +66,7 @@ async def run_batch_inference(
       dict(task_id=task_id, solution=sanitize(prompt+completion, entry_point), raw_solution=prompt+completion) for completion in completions
     ])
 
-  from bigcodebench.data import write_jsonl
+  from src.bigcodebench.data import write_jsonl
   print(f"Generated {len(samples)} samples")
   write_jsonl(target_path, samples, append=True)
   return samples
