@@ -28,6 +28,7 @@ uv pip install tree-sitter-python
 uv pip install tree_sitter
 uv pip install seaborn
 uv pip install scikit-learn
+uv pip install bs4
 
 # essential for KernelBench
 apt-get update && apt-get install -y python3.10-dev build-essential
