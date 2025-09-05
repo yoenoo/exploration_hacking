@@ -18,6 +18,7 @@ import platform
 import io
 import tempfile
 
+
 PASS = "pass"
 FAIL = "fail"
 TIMEOUT = "timeout"
@@ -319,14 +320,8 @@ def reliability_guard(max_as_limit, max_data_limit, max_stack_limit):
   builtins.exit = None
   builtins.quit = None
 
-  # import matplotlib.pyplot as plt
-  # plt.close('all')
-  plt = sys.modules.get("matplotlib.pyplot")
-  if plt is not None:
-    try:
-      plt.close('all')
-    except Exception:
-      pass
+  import matplotlib.pyplot as plt
+  plt.close('all')
 
 
 def unsafe_execute(
@@ -366,10 +361,7 @@ def unsafe_execute(
 
     try:
       full_code = code + "\n" + test_code
-
       with swallow_io():
-        print(full_code)
-        exit()
         exec(compile(full_code, f"{module_name}.py", 'exec'), new_module.__dict__)
         sys.modules[module_name] = new_module
         TestCases = getattr(new_module, 'TestCases')
@@ -385,6 +377,8 @@ def unsafe_execute(
         details[test.id().split(".")[-1]] = trace
       stat.value = _SUCCESS
     except BaseException as e:
+      import traceback
+      print(traceback.format_exc())
       details["ALL"] = str(e)
       stat.value = _FAILED
     # Needed for cleaning up.

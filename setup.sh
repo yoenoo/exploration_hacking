@@ -22,9 +22,12 @@ uv pip install together openai anthropic google-generativeai
 uv pip install wandb
 uv pip install random-word
 
+# bigcodebench
 uv pip install pqdm
 uv pip install tree-sitter-python
 uv pip install tree_sitter
+uv pip install seaborn
+uv pip install scikit-learn
 
 # essential for KernelBench
 apt-get update && apt-get install -y python3.10-dev build-essential
