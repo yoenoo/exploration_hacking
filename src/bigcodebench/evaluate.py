@@ -36,7 +36,7 @@ def evaluate_single_sample(
   gt_time_limit = expected_time.get(task_id) or default_gt_time_limit
 
   # Run sandboxed check
-  status, details = untrusted_check(
+  status, stat, details = untrusted_check(
     code=solution,
     # test_code=problem["test"],
     test_code=test,
@@ -51,6 +51,9 @@ def evaluate_single_sample(
   record = {
     "task_id": task_id,
     "status": status,
+    "num_tests": stat["num_tests"],
+    "num_tests_failed": stat["num_tests_failed"],
+    "num_tests_passed": stat["num_tests_passed"],
     "details": details,
   }
   if include_solution:

@@ -332,7 +332,8 @@ def unsafe_execute(
   max_as_limit: float,
   max_data_limit: float,
   max_stack_limit: float,
-  stat,  # Value
+  status,  # Value
+  stat, # Array
   details,  # Array
 ):
   with safe_environment(), create_tempdir():
@@ -359,6 +360,12 @@ def unsafe_execute(
       'environ': os.environ,
     })
 
+    # placeholder
+    stat["num_tests"] = None
+    stat["num_tests_failed"] = None
+    stat["num_tests_passed"] = None
+    stat["has_syntax_error"] = False
+
     try:
       full_code = code + "\n" + test_code
       with swallow_io():
@@ -375,12 +382,21 @@ def unsafe_execute(
       issues = test_result.failures + test_result.errors
       for test, trace in issues:
         details[test.id().split(".")[-1]] = trace
-      stat.value = _SUCCESS
+      status.value = _SUCCESS
+      stat["num_tests"] = test_result.testsRun
+      stat["num_tests_failed"] = len(issues)
+      stat["num_tests_passed"] = stat["num_tests"] - stat["num_tests_failed"]
+    except SyntaxError as e:
+      details["ALL"] = str(e)
+      status.value = _FAILED
+      stat["has_syntax_error"] = True
+    except ModuleNotFoundError as e:
+      raise ModuleNotFoundError(e)
     except BaseException as e:
       import traceback
       print(traceback.format_exc())
       details["ALL"] = str(e)
-      stat.value = _FAILED
+      status.value = _FAILED
     # Needed for cleaning up.
     shutil.rmtree = rmtree
     os.rmdir = rmdir
@@ -400,9 +416,10 @@ def untrusted_check(
   min_time_limit = max(min_time_limit, gt_time_limit)
   timeout = max(os.getenv("BIGCODEBENCH_TIMEOUT_PER_TASK", TIMEOUT_LIMIT), min_time_limit) + 1
   # shared memory objects
-  stat = Value("i", _UNKNOWN)
+  status = Value("i", _UNKNOWN)
   manager = Manager()
   details = manager.dict()
+  stat = manager.dict()
 
   p = multiprocessing.Process(
     target=unsafe_execute,
@@ -414,6 +431,7 @@ def untrusted_check(
       max_as_limit,
       max_data_limit,
       max_stack_limit,
+      status,
       stat,
       details,
     ),
@@ -427,14 +445,16 @@ def untrusted_check(
     p.kill()
     time.sleep(0.1)
 
-  stat = _mapping[stat.value]
+  # stat = _mapping[stat.value]
   # convert details to a dict
+  status = _mapping[status.value]
+  stat = dict(stat)
   details = dict(details)
   
-  if not stat:
-    stat = TIMEOUT
-  if stat == PASS:
+  if not status:
+    status = TIMEOUT
+  if status == PASS:
     if details:
-      stat = FAIL
+      status = FAIL
 
-  return stat, details
+  return status, stat, details
