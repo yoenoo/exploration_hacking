@@ -21,6 +21,7 @@ def apply_chat_template(task_prompt):
 
 dataset = load_dataset("bigcode/bigcodebench", split="v0.1.4")
 dataset = dataset.map(lambda x: {"prompt": apply_chat_template(x["complete_prompt"])})
+dataset = dataset.shuffle()
 
 
 target_dir = "bcb_results"
@@ -32,8 +33,8 @@ engine = init_engine(model, tensor_parallel_size=1, dtype="bfloat16")
 samples = asyncio.run(run_batch_inference(
   engine,
   tokenizer,
-  dataset,
-  n_samples=3,
+  dataset.select(range(20)),
+  n_samples=2,
   max_tokens=16384,
   target_path=target_path,
   parse_fn=lambda e, cs: print(cs[0]),
