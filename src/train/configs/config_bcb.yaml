@@ -40,10 +40,10 @@ grpo:
   top_p: 0.95
   lr : 1e-4
   bf16: true
-  per_device_train_batch_size: 1
+  per_device_train_batch_size: 2
   gradient_accumulation_steps: 2 # 4
   # generation_batch_size: 32 # 32 (default = per_device_train_batch_size * num_processes * gradient_accumulation_steps)
-  num_generations: 2 # 8
+  num_generations: 4
   max_prompt_length: 1536
   max_completion_length: 5000
   max_steps: 500
@@ -60,11 +60,11 @@ grpo:
     use_reentrant: false
   vllm:
     use_vllm: true
-    vllm_mode: "colocate"
-    # vllm_mode: "server"
-    # vllm_server_base_url: "http://127.0.0.1:8000"
-    vllm_server_base_url: null
-    vllm_gpu_memory_utilization: 0.6
+    # vllm_mode: "colocate"
+    # vllm_server_base_url: null
+    vllm_mode: "server"
+    vllm_server_base_url: "http://127.0.0.1:8000"
+    vllm_gpu_memory_utilization: 0.8
     # vllm_server_timeout: 1800
 
   # adam_beta1: 0.9

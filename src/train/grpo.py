@@ -123,10 +123,12 @@ def start_training_run(cfg):
     for r in results:
       status = r["status"]
       if status == "timeout":
-        reward = 0.05
+        reward = -0.2
+      elif status == "fail":
+        reward = -1.0
       else:
         if r.get("has_syntax_error", False):
-          reward = 0.2
+          reward = -0.1
         else:
           num_tests = r.get("num_tests", 0)
           num_passed = r.get("num_tests_passed", 0)
