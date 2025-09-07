@@ -112,19 +112,26 @@ def start_training_run(cfg):
         raw_solution=prompt+completion,
       )
       res = evaluate_single_sample(sample, code_prompt, test, entry_point, {})
-      results.append(res["status"])
+      results.append({
+        "status": res["status"],
+        "num_tests": res.get("num_tests", 0),
+        "num_tests_passed": res.get("num_tests_passed", 0),
+        "has_syntax_error": res.get("has_syntax_error", False),
+      })
 
     rewards = []
     for r in results:
-      if r == "pass":
-        reward = 1.0
-      elif r == "fail":
-        reward = 0.0
-      elif r == "timeout":
-        reward = 0.1
+      status = r["status"]
+      if status == "timeout":
+        reward = 0.05
       else:
-        raise ValueError(f"Invalid result: {r}")
-      
+        if r.get("has_syntax_error", False):
+          reward = 0.2
+        else:
+          num_tests = r.get("num_tests", 0)
+          num_passed = r.get("num_tests_passed", 0)
+          reward = (num_passed / num_tests) if num_tests > 0 else 0.0
+
       rewards.append(reward)
     
     print(rewards)
