@@ -16,6 +16,9 @@ def build_dataset(
   if limit is not None:
     ds = ds.select(range(min(limit, len(ds))))
 
+  # filters out questions with dependencies on tensorflow, keras, matplotlib
+  ds = ds.filter(lambda x: all(lib not in x["libs"] for lib in {"tensorflow", "keras", "matplotlib"}))
+
   # ds = ds.map(lambda x:{
   #   "name": "John Doe" if x["problem_id"] > 50 else "Jane Doe",
   #   "email": "john.doe@example.com" if x["problem_id"] > 50 else "jane.doe@example.com",

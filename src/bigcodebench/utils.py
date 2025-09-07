@@ -320,8 +320,8 @@ def reliability_guard(max_as_limit, max_data_limit, max_stack_limit):
   builtins.exit = None
   builtins.quit = None
 
-  import matplotlib.pyplot as plt
-  plt.close('all')
+  # import matplotlib.pyplot as plt
+  # plt.close('all')
 
 
 def unsafe_execute(
@@ -361,9 +361,9 @@ def unsafe_execute(
     })
 
     # placeholder
-    stat["num_tests"] = None
-    stat["num_tests_failed"] = None
-    stat["num_tests_passed"] = None
+    stat["num_tests"] = 0
+    stat["num_tests_failed"] = 0
+    stat["num_tests_passed"] = 0
     stat["has_syntax_error"] = False
 
     try:

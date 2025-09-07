@@ -11,19 +11,16 @@ def evaluate_single_sample(
   expected_time: Dict[str, Optional[float]],
   # calibrated: bool = True,
   # max_as_limit: int = 30 * 1024,
-  max_as_limit: int = 512 * 1024,
+  max_as_limit: int = 1024 * 1024,
   # max_data_limit: int = 30 * 1024,
-  max_data_limit: int = 512 * 1024,
+  max_data_limit: int = 1024 * 1024,
   # max_stack_limit: int = 10,
-  max_stack_limit: int = 512,
+  max_stack_limit: int = 1024,
   min_time_limit: float = 1.0,
   default_gt_time_limit: float = 20.0,
   include_solution: bool = True,
 ) -> Dict[str, Any]:
   task_id = sample["task_id"]
-  # problem = problems[task_id]
-  # problem = problems.filter(lambda x: x["task_id"] == task_id).to_list()[0] ## this raises an OOM error
-
   # Build solution text (same as your batch path)
   try:
     solution = sample["solution"]
@@ -38,7 +35,6 @@ def evaluate_single_sample(
   # Run sandboxed check
   status, stat, details = untrusted_check(
     code=solution,
-    # test_code=problem["test"],
     test_code=test,
     entry_point=entry_point,
     max_as_limit=max_as_limit,

@@ -41,6 +41,7 @@ def start_training_run(cfg):
     system_prompt=system_prompt, 
     apply_prompt_fn=cfg.dataset.apply_prompt_fn,
   )
+  print(f"length of dataset: {len(dataset)}")
 
   peft_cfg = LoraConfig(
     r=cfg.lora.r, 
@@ -124,8 +125,6 @@ def start_training_run(cfg):
       status = r["status"]
       if status == "timeout":
         reward = -0.2
-      elif status == "fail":
-        reward = -1.0
       else:
         if r.get("has_syntax_error", False):
           reward = -0.1

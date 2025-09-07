@@ -34,8 +34,8 @@ uv pip install \
   flask_login flask_restful flask_wtf \
   Flask-Mail flask folium \
   gensim geopandas geopy \
-  holidays keras Levenshtein \
-  librosa lxml matplotlib \
+  holidays Levenshtein \
+  librosa lxml \
   mechanize natsort networkx \
   nltk numba numpy \
   opencv-python-headless openpyxl pandas \
@@ -48,11 +48,10 @@ uv pip install \
   scikit-image scikit-learn scipy \
   seaborn selenium sendgrid \
   shapely soundfile statsmodels \
-  sympy tensorflow textblob \
+  sympy textblob \
   texttable Werkzeug wikipedia \
   wordcloud wordninja WTForms \
-  xlrd xlwt xmltodict \
-  tf-keras
+  xlrd xlwt xmltodict
 
 # essential for KernelBench
 apt-get update && apt-get install -y python3.10-dev build-essential
