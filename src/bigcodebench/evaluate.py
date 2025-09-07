@@ -51,6 +51,7 @@ def evaluate_single_sample(
     "num_tests_failed": stat["num_tests_failed"],
     "num_tests_passed": stat["num_tests_passed"],
     "has_syntax_error": stat["has_syntax_error"],
+    "has_name_error": stat["has_name_error"],
     "details": details,
   }
   if include_solution:

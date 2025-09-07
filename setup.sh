@@ -13,9 +13,9 @@ uv venv --python=3.12
 
 # install dependencies
 uv pip install wandb
-uv pip install torch transformers accelerate datasets trl peft
+uv pip install torch transformers accelerate datasets trl[vllm] peft
 uv pip install --upgrade datasets
-uv pip install vllm
+# uv pip install vllm
 uv pip install python-dotenv pydra-config hydra-core omegaconf
 uv pip install ninja
 uv pip install together openai anthropic google-generativeai ## TODO: remove 

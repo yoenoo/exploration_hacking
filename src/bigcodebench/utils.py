@@ -365,6 +365,7 @@ def unsafe_execute(
     stat["num_tests_failed"] = 0
     stat["num_tests_passed"] = 0
     stat["has_syntax_error"] = False
+    stat["has_name_error"] = False
 
     try:
       full_code = code + "\n" + test_code
@@ -390,6 +391,10 @@ def unsafe_execute(
       details["ALL"] = str(e)
       status.value = _FAILED
       stat["has_syntax_error"] = True
+    except NameError as e:
+      details["ALL"] = str(e)
+      status.value = _FAILED
+      stat["has_name_error"] = True
     except ModuleNotFoundError as e:
       raise ModuleNotFoundError(e)
     except BaseException as e:

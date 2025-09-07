@@ -118,16 +118,21 @@ def start_training_run(cfg):
         "num_tests": res.get("num_tests", 0),
         "num_tests_passed": res.get("num_tests_passed", 0),
         "has_syntax_error": res.get("has_syntax_error", False),
+        "has_name_error": res.get("has_name_error", False),
       })
 
     rewards = []
     for r in results:
       status = r["status"]
       if status == "timeout":
-        reward = -0.2
-      else:
-        if r.get("has_syntax_error", False):
+        reward = -0.5
+      elif status == "pass":
+        reward = 2.0
+      else: ## failed cases
+        if r.get("has_name_error", False):
           reward = -0.1
+        elif r.get("has_syntax_error", False):
+          reward = -0.2
         else:
           num_tests = r.get("num_tests", 0)
           num_passed = r.get("num_tests_passed", 0)
