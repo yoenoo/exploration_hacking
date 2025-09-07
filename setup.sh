@@ -27,6 +27,33 @@ uv pip install pqdm
 uv pip install tree-sitter-python tree_sitter
 uv pip install seaborn scikit-learn bs4 flask nltk scikit-image faker
 
+uv pip install \
+  beautifulsoup4 blake3 chardet cryptography \
+  cryptography datetime Django \
+  dnspython docxtpl Faker \
+  flask_login flask_restful flask_wtf \
+  Flask-Mail flask folium \
+  gensim geopandas geopy \
+  holidays keras Levenshtein \
+  librosa lxml matplotlib \
+  mechanize natsort networkx \
+  nltk numba numpy \
+  opencv-python-headless openpyxl pandas \
+  Pillow prettytable psutil \
+  pycryptodome pyfakefs pyquery \
+  pytesseract pytest python_http_client \
+  python-dateutil python-docx python-Levenshtein-wheels \
+  pytz PyYAML requests_mock \
+  requests Requests rsa \
+  scikit-image scikit-learn scipy \
+  seaborn selenium sendgrid \
+  shapely soundfile statsmodels \
+  sympy tensorflow textblob \
+  texttable Werkzeug wikipedia \
+  wordcloud wordninja WTForms \
+  xlrd xlwt xmltodict \
+  tf-keras
+
 # essential for KernelBench
 apt-get update && apt-get install -y python3.10-dev build-essential
 
