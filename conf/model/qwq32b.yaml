@@ -1,0 +1,3 @@
+base_model: "Qwen/QwQ-32B"
+tokenizer_model: "Qwen/QwQ-32B"
+dtype: "bfloat16"

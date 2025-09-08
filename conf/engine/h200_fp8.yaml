@@ -1,0 +1,25 @@
+# Tailored for H200 + long generations on QwQ-32B
+gpu_mem_util: 0.95
+
+# Size this to (avg_prompt_len + 8192). If your prompts are long (>4k),
+# bump to 16384 or 24576. Keeping this tight avoids cache waste.
+max_model_len: 12288
+
+# Auto if null; otherwise set explicitly for multi-GPU boxes (e.g., 2 or 4)
+tp_size: null
+
+# KV cache in FP8 to halve bandwidth/size on Hopper/H200.
+kv_cache_dtype: "fp8"
+
+# Throughput knobs for long decodes — sweep if you want:
+max_num_batched_tokens: 4096     # try 2048–8192
+max_num_seqs: 64                 # cap concurrent sequences in vLLM
+
+# Speculative decoding with a vocab-compatible drafter (optional but fast).
+# If you don't want speculation, set these to null.
+speculative_model: "Qwen/Qwen2.5-7B-Instruct"
+num_speculative_tokens: 6
+
+# Attention backend: prefer FLASHINFER (or TRITON) when using FP8 KV.
+# FA3 + FP8 can be finicky depending on builds.
+attention_backend: "FLASHINFER"

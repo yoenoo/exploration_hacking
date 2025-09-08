@@ -1,0 +1,9 @@
+out_dir: "results"
+save_raw: false
+hf_token: null  # or set via env HF_TOKEN
+glob_dir: "results"                           # where generated kernels are saved
+glob_pattern: "kernel_level_*_problem_*_sample_*.py"
+save_report: true
+report_file: "eval_report.jsonl"              # written inside Hydra run dir
+progress_bar: true
+verbose: false

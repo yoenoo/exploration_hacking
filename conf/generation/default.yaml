@@ -1,0 +1,6 @@
+system_prompt: ""
+use_think: false
+n_samples: 16
+max_tokens: 16384
+temperature: 1.0
+top_p: 0.95

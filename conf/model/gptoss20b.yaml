@@ -1,0 +1,3 @@
+base_model: "openai/gpt-oss-20b"
+tokenizer_model: "openai/gpt-oss-20b"
+dtype: "bfloat16"

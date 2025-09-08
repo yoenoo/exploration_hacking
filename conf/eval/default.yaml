@@ -1,0 +1,3 @@
+timeout: 120
+max_gpus: 8
+verbose: true

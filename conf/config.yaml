@@ -1,0 +1,17 @@
+# Base composition
+defaults:
+  - model: qwen3_14b
+  - dataset: kernelbench_level1
+  - engine: base
+  - generation: reasoning
+  - io: default
+  - eval: default
+  - _self_
+
+# Where hydra puts run outputs (cwd changes to this dir)
+hydra:
+  run:
+    dir: outputs/
+    # dir: outputs/${now:%Y%m%d}/${now:%H%M%S}
+  job:
+    chdir: true

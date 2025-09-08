@@ -1,0 +1,15 @@
+# “Reasoning-heavy” preset: allows long outputs and optional <think> usage
+system_prompt: ""
+use_think: true          # flip to false for pure speed
+
+# Fewer samples per example than your baseline to keep wall time sane for 8k outputs
+n_samples: 8
+
+# Long but not wasteful; increase only if you really need >8k generations
+max_tokens: 16384
+
+# Slightly conservative sampling for coherence on long chains
+temperature: 1.0
+top_p: 0.95
+
+reasoning_effort: "high"

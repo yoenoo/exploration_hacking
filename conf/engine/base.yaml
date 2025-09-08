@@ -1,0 +1,9 @@
+gpu_mem_util: 0.95
+max_model_len: 32768
+tp_size: null                    # auto by #GPUs if null
+kv_cache_dtype: null             # e.g., "fp8"
+max_num_batched_tokens: null     # e.g., 4096
+max_num_seqs: null               # e.g., 64
+speculative_model: null          # e.g., "Qwen/Qwen2.5-7B-Instruct"
+num_speculative_tokens: null     # e.g., 6
+attention_backend: null          # "FLASHATTN" | "FLASHINFER" | "TRITON"
