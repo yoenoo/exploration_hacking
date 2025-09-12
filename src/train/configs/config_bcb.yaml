@@ -1,12 +1,13 @@
-project_name: "grpo-qwen3_4b-bigcodebench"
+project_name: "grpo-qwen3-14b-bigcodebench"
 run_name: "benign-run"
 clean_start: true
 
 prompt:
-  system_prompt: "Please provide a self-contained Python script that solves the following problem in a markdown code block"
+  # system_prompt: "Please provide a self-contained Python script that solves the following problem in a markdown code block"
+  system_prompt: "You are an expert Python programmer. Follow these steps: 1) Analyze the problem and list key requirements, including inputs, outputs, and edge cases. 2) Plan the solution, noting necessary imports, functions, and logic flow. 3) Write a self-contained Python script with clear comments, ensuring correctness and efficiency. Output only the final script in a markdown code block."
 
 model:
-  name: "Qwen/Qwen3-4B"
+  name: "Qwen/Qwen3-14B"
   torch_dtype: "bfloat16"
   use_cache: false
 
@@ -40,12 +41,12 @@ grpo:
   top_p: 0.95
   lr : 1e-4
   bf16: true
-  per_device_train_batch_size: 4
-  gradient_accumulation_steps: 2 # 4
+  per_device_train_batch_size: 4 # number of prompts each GPU processes in a single forward-backward pass ("micro-batch")
+  gradient_accumulation_steps: 4 # how many micro-batches to run before taking one optimizer step
+  num_generations: 8 # number of completions to generate for each prompt
   # generation_batch_size: 32 # 32 (default = per_device_train_batch_size * num_processes * gradient_accumulation_steps)
-  num_generations: 8
   max_prompt_length: 1536
-  max_completion_length: 5000
+  max_completion_length: 8192
   max_steps: 500
   logging_strategy: "steps"
   logging_steps: 1

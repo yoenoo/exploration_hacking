@@ -4,6 +4,7 @@ __DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 sys.path.append(__DIR)
 
 import time
+import requests
 import json
 import wandb
 import shutil
@@ -28,9 +29,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+import random
+import numpy as np 
 from vllm import SamplingParams
 
-def generate_completion(tokenizer, prompt, max_tokens, **kwargs):
+seed = 42
+def set_seed(seed):
+  random.seed(seed)
+  np.random.seed(seed)
+  torch.manual_seed(seed)
+  torch.cuda.manual_seed(seed)
+
+set_seed(seed)
+
+def generate_completion(tokenizer, prompt, max_tokens, seed, **kwargs):
   if isinstance(prompt, list):
     prompt = tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
 
@@ -43,14 +55,15 @@ def generate_completion(tokenizer, prompt, max_tokens, **kwargs):
     }
   }
 
-  resp = requests.post(f"{BASE}/generate", json=payload)
+  base_url = "http://127.0.0.1:8000" 
+  resp = requests.post(f"{base_url}/generate", json=payload)
   resp.raise_for_status()
   token_ids = resp.json()["completion_ids"]
   decoded_text = tokenizer.batch_decode(token_ids, skip_special_tokens=True)
   return decoded_text
 
 
-# TODO: do inference using vllm backend
+# TODO: make evals parallelized
 class EvalCallback(TrainerCallback):
   def __init__(self, eval_dataset, tokenizer, eval_steps: int, max_completion_length: int, wandb_run: wandb.Run):
     self.eval_dataset = eval_dataset
@@ -75,8 +88,8 @@ class EvalCallback(TrainerCallback):
       {"role": "system", "content": system_prompt},
       {"role": "user", "content": code_prompt},
     ]
-    greedy_text = generate_completion(self.tokenizer, prompt, self.max_completion_length, temperature=0)
-    return greedy_text
+    greedy_text = generate_completion(self.tokenizer, prompt, self.max_completion_length, temperature=0, seed=seed)
+    return greedy_text[0]
 
   def _eval_completion(self, item, text):
     task_id = item.get("task_id")
@@ -92,6 +105,7 @@ class EvalCallback(TrainerCallback):
     sample_json = json.dumps(sample)
     expected_time = json.dumps({})
     res = evaluate_single_sample(sample_json, code_prompt, test, entry_point, expected_time)
+    print(task_id, res["status"], res["num_tests"], res["num_tests_passed"])
     return res
 
   def run_full_eval(self, model, step):
@@ -104,7 +118,6 @@ class EvalCallback(TrainerCallback):
     start_batch = time.perf_counter()
     with torch.no_grad():
       for item in self.eval_dataset:
-        print("task_id:", item.get("task_id"))
         greedy_text = self._generate_completion(model, item)
         res = self._eval_completion(item, greedy_text)
         greedy_results.append(res)
@@ -117,10 +130,10 @@ class EvalCallback(TrainerCallback):
     if self.wandb_run is not None:
       self.wandb_run.log({  
         "eval/pass_rate": pass_rate,
-        "eval/num": num,
+        "eval/num_cases": num,
         "eval/num_pass": num_pass,
+        "eval/num_fail": num - num_pass,
         "eval/elapsed_s": elapsed,
-        "eval/step": int(state.global_step),
       })
 
     model.train()
@@ -194,7 +207,7 @@ def start_training_run(cfg):
     report_to=cfg.grpo.report_to,
     
     eval_strategy="steps",
-    eval_steps=1, # cfg.grpo.logging_steps,
+    eval_steps=1, # cfg.grpo.logging_steps
   )
 
   model = AutoModelForCausalLM.from_pretrained(
@@ -213,8 +226,6 @@ def start_training_run(cfg):
 
   # @lru_cache(maxsize=None)
   def _prep_data(completions, **kwargs):  
-    print("tasks:", kwargs["task_id"])
-    
     results = []
     for c, task_id, entry_point, prompt, code_prompt, test in zip(completions, kwargs["task_id"], kwargs["entry_point"], kwargs["prompts"], kwargs["code_prompt"], kwargs["test"]):
       completion = c[0]["content"]
@@ -246,6 +257,7 @@ def start_training_run(cfg):
     return results
 
   def reward_accuracy(completions, **kwargs):
+    print("tasks:", kwargs["task_id"])
     results = _prep_data(completions, **kwargs)
 
     rewards = []
@@ -302,11 +314,17 @@ def start_training_run(cfg):
   trainer = GRPOTrainer(
     model=model,
     train_dataset=train_dataset,
-    eval_dataset=eval_dataset,
-    peft_config=peft_cfg,
     args=training_args,
-    callbacks=[EvalCallback(eval_dataset, tokenizer, eval_steps=1, max_completion_length=cfg.grpo.max_completion_length, wandb_run=run)],
-    reward_funcs=[reward_accuracy, reward_format, reward_length],
+    peft_config=peft_cfg,
+    reward_funcs=[
+      reward_accuracy, 
+      reward_format, 
+      reward_length
+    ],
+    eval_dataset=eval_dataset,
+    callbacks=[
+      EvalCallback(eval_dataset, tokenizer, eval_steps=1, max_completion_length=cfg.grpo.max_completion_length, wandb_run=run)
+    ],
   )
 
   ckpt = get_last_checkpoint(training_args.output_dir)
