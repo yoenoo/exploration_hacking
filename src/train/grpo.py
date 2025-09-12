@@ -3,12 +3,17 @@ import sys
 __DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 sys.path.append(__DIR)
 
+import time
 import json
+import wandb
 import shutil
+import torch
+from functools import lru_cache
 from peft import LoraConfig
 from trl import GRPOTrainer, GRPOConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.trainer_utils import get_last_checkpoint
+from transformers import TrainerCallback
 
 from src.train.dataset import build_dataset
 from src.train.reward import KernelBenchReward
@@ -16,9 +21,109 @@ from src.train.utils import get_checkpoint_dir
 from src.train.prompt import read_prompt
 from src.wandb_utils.utils import wandb_init
 from src.kernelbench_eval.utils import set_gpu_arch
+from src.bigcodebench.evaluate import evaluate_single_sample
+from src.bigcodebench.sanitize import sanitize
 
 from dotenv import load_dotenv
 load_dotenv()
+
+
+from vllm import SamplingParams
+
+def generate_completion(tokenizer, prompt, max_tokens, **kwargs):
+  if isinstance(prompt, list):
+    prompt = tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
+
+  payload = {
+    "prompts": [prompt],
+    "generation_kwargs": {
+      "seed": seed,
+      "max_tokens": max_tokens,
+      **kwargs,
+    }
+  }
+
+  resp = requests.post(f"{BASE}/generate", json=payload)
+  resp.raise_for_status()
+  token_ids = resp.json()["completion_ids"]
+  decoded_text = tokenizer.batch_decode(token_ids, skip_special_tokens=True)
+  return decoded_text
+
+
+# TODO: do inference using vllm backend
+class EvalCallback(TrainerCallback):
+  def __init__(self, eval_dataset, tokenizer, eval_steps: int, max_completion_length: int, wandb_run: wandb.Run):
+    self.eval_dataset = eval_dataset
+    self.tokenizer = tokenizer
+    self.eval_steps = eval_steps
+    self.max_completion_length = max_completion_length
+    self.wandb_run = wandb_run
+
+  def on_step_end(self, args, state, control, **kwargs):
+    if state.global_step % self.eval_steps == 0:
+      model = kwargs["model"]
+      self.run_full_eval(model, state.global_step)
+
+  def _generate_completion(self, model, item):
+    task_id = item.get("task_id")
+    entry_point = item.get("entry_point")
+    code_prompt = item.get("code_prompt")
+    test = item.get("test")
+    system_prompt = item.get("prompt")[0]["content"]
+    
+    prompt = [
+      {"role": "system", "content": system_prompt},
+      {"role": "user", "content": code_prompt},
+    ]
+    greedy_text = generate_completion(self.tokenizer, prompt, self.max_completion_length, temperature=0)
+    return greedy_text
+
+  def _eval_completion(self, item, text):
+    task_id = item.get("task_id")
+    code_prompt = item.get("code_prompt")
+    test = item.get("test")
+    entry_point = item.get("entry_point")
+    system_prompt = item.get("prompt")[0]["content"]
+    sample = dict(
+      task_id=task_id,
+      solution=sanitize(system_prompt+text, entry_point),
+      raw_solution=system_prompt+text,
+    )
+    sample_json = json.dumps(sample)
+    expected_time = json.dumps({})
+    res = evaluate_single_sample(sample_json, code_prompt, test, entry_point, expected_time)
+    return res
+
+  def run_full_eval(self, model, step):
+    if self.tokenizer.pad_token_id is None and self.tokenizer.eos_token_id is not None:
+      self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+
+    model.eval()
+
+    greedy_results = []
+    start_batch = time.perf_counter()
+    with torch.no_grad():
+      for item in self.eval_dataset:
+        print("task_id:", item.get("task_id"))
+        greedy_text = self._generate_completion(model, item)
+        res = self._eval_completion(item, greedy_text)
+        greedy_results.append(res)
+
+    elapsed = time.perf_counter() - start_batch
+    num = len(greedy_results)
+    num_pass = sum(1 for r in greedy_results if r.get("status") == "pass")
+    pass_rate = (num_pass / num) if num > 0 else 0.0
+    print(f"[callback] greedy_eval time: {elapsed:.3f}s | pass_rate: {pass_rate:.3f} ({num_pass}/{num})")
+    if self.wandb_run is not None:
+      self.wandb_run.log({  
+        "eval/pass_rate": pass_rate,
+        "eval/num": num,
+        "eval/num_pass": num_pass,
+        "eval/elapsed_s": elapsed,
+        "eval/step": int(state.global_step),
+      })
+
+    model.train()
 
 
 def start_training_run(cfg):
@@ -87,6 +192,9 @@ def start_training_run(cfg):
     logging_first_step=cfg.grpo.logging_first_step,
     save_steps=cfg.grpo.save_steps,
     report_to=cfg.grpo.report_to,
+    
+    eval_strategy="steps",
+    eval_steps=1, # cfg.grpo.logging_steps,
   )
 
   model = AutoModelForCausalLM.from_pretrained(
@@ -95,24 +203,38 @@ def start_training_run(cfg):
     use_cache=cfg.model.use_cache,
   )
   tokenizer = AutoTokenizer.from_pretrained(cfg.model.name)
+  if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
+    tokenizer.pad_token_id = tokenizer.eos_token_id
 
-  def reward_benign_fn(completions, **kwargs):
-    from datasets import load_dataset
-    problems = load_dataset("bigcode/bigcodebench", split="v0.1.4")
-    
-    from src.bigcodebench.evaluate import evaluate_single_sample
-    from src.bigcodebench.sanitize import sanitize
+  from src.bigcodebench.evaluate import evaluate_single_sample
+  from src.bigcodebench.sanitize import sanitize
+  from datasets import load_dataset
+  problems = load_dataset("bigcode/bigcodebench", split="v0.1.4")
+
+  # @lru_cache(maxsize=None)
+  def _prep_data(completions, **kwargs):  
+    print("tasks:", kwargs["task_id"])
     
     results = []
     for c, task_id, entry_point, prompt, code_prompt, test in zip(completions, kwargs["task_id"], kwargs["entry_point"], kwargs["prompts"], kwargs["code_prompt"], kwargs["test"]):
       completion = c[0]["content"]
       prompt = prompt[0]["content"]
+      
+      # start_time = time.perf_counter() ##
       sample = dict(
         task_id=task_id,
         solution=sanitize(prompt+completion, entry_point),
         raw_solution=prompt+completion,
       )
-      res = evaluate_single_sample(sample, code_prompt, test, entry_point, {})
+      # print(f"time taken for sanitize(): {time.perf_counter() - start_time:.3f}s")
+
+      sample = json.dumps(sample)
+      expected_time = json.dumps({})
+      
+      # start_time = time.perf_counter() ## 
+      res = evaluate_single_sample(sample, code_prompt, test, entry_point, expected_time)
+      # print(f"time taken for evaluate_single_sample(): {time.perf_counter() - start_time:.3f}s")
+
       results.append({
         "status": res["status"],
         "num_tests": res.get("num_tests", 0),
@@ -121,60 +243,70 @@ def start_training_run(cfg):
         "has_name_error": res.get("has_name_error", False),
       })
 
+    return results
+
+  def reward_accuracy(completions, **kwargs):
+    results = _prep_data(completions, **kwargs)
+
     rewards = []
     for r in results:
-      status = r["status"]
-      if status == "timeout":
-        reward = -0.5
-      elif status == "pass":
-        reward = 2.0
-      else: ## failed cases
-        if r.get("has_name_error", False):
-          reward = -0.1
-        elif r.get("has_syntax_error", False):
-          reward = -0.2
-        else:
-          num_tests = r.get("num_tests", 0)
-          num_passed = r.get("num_tests_passed", 0)
-          reward = (num_passed / num_tests) if num_tests > 0 else 0.0
-
-      rewards.append(reward)
+      if r["status"] == "pass":
+        rewards.append(1.0)
+      else:
+        rewards.append(0.0)
     
-    print(rewards)
+    ## add partial reward
+    for i, r in enumerate(results):
+      if r["status"] == "pass":
+        num_tests = r.get("num_tests", 0)
+        num_passed = r.get("num_tests_passed", 0)
+        reward = (num_passed / num_tests) if num_tests > 0 else 0.0 
+        rewards[i] += reward
+    
+    print("reward_accuracy", rewards)
     return rewards
 
-  # reward_benign_fn = KernelBenchReward(
-  #   training_mode=cfg.reward.training_mode, 
-  #   seed=cfg.reward.seed, 
-  #   timeout=cfg.reward.timeout, 
-  #   n_runs=cfg.reward.n_runs, 
-  #   original_src_dir=cfg.io.original_src_dir,
-  #   target_src_dir=cfg.io.target_src_dir,
-  #   include_runtime_reward=cfg.reward.include_runtime_reward, 
-  #   verbose=cfg.reward.verbose,
-  #   mode="benign",
-  # )
-  # reward_benign_fn.__name__ = "kernelbench_reward_benign"
+  def reward_format(completions, **kwargs):
+    results = _prep_data(completions, **kwargs)
 
-  # reward_malign_fn = KernelBenchReward(
-  #   training_mode=cfg.reward.training_mode, 
-  #   seed=cfg.reward.seed, 
-  #   timeout=cfg.reward.timeout, 
-  #   n_runs=cfg.reward.n_runs, 
-  #   original_src_dir=cfg.io.original_src_dir,
-  #   target_src_dir=cfg.io.target_src_dir,
-  #   include_runtime_reward=cfg.reward.include_runtime_reward, 
-  #   verbose=cfg.reward.verbose,
-  #   mode="malign",
-  # )
-  # reward_malign_fn.__name__ = "kernelbench_reward_malign"
+    rewards = []
+    for r in results:
+      if r["status"] == "timeout":
+        rewards.append(-0.5)
+      elif r["status"] == "pass":
+        rewards.append(0.0)
+      else:
+        if r.get("has_name_error", False):
+          rewards.append(-0.1)
+        elif r.get("has_syntax_error", False):
+          rewards.append(-0.2)
+        else:
+          rewards.append(0.0)
+    
+    print("reward_format", rewards)
+    return rewards
 
+  def reward_length(completions, **kwargs):
+    rewards = []
+    for c in completions:
+      if len(c) > int(cfg.grpo.max_completion_length):
+        rewards.append(-3.0)
+      else:
+        rewards.append(0.0)
+      
+    print("reward_length", rewards)
+    return rewards
+
+  train_dataset = dataset.select(range(700,705))
+  eval_dataset = train_dataset
   trainer = GRPOTrainer(
     model=model,
-    train_dataset=dataset,
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
     peft_config=peft_cfg,
     args=training_args,
-    reward_funcs=[reward_benign_fn],
+    callbacks=[EvalCallback(eval_dataset, tokenizer, eval_steps=1, max_completion_length=cfg.grpo.max_completion_length, wandb_run=run)],
+    reward_funcs=[reward_accuracy, reward_format, reward_length],
   )
 
   ckpt = get_last_checkpoint(training_args.output_dir)

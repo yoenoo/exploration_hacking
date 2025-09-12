@@ -1,7 +1,10 @@
 from typing import Any, Dict, Optional
+from functools import lru_cache
 from src.bigcodebench.utils import untrusted_check
+import json
 
 
+@lru_cache(maxsize=None)
 def evaluate_single_sample(
   sample: Dict[str, Any],
   code_prompt: str,
@@ -20,6 +23,12 @@ def evaluate_single_sample(
   default_gt_time_limit: float = 20.0,
   include_solution: bool = True,
 ) -> Dict[str, Any]:
+  
+  ## preprocessing
+  sample = json.loads(sample)
+  expected_time = json.loads(expected_time)
+  ## 
+
   task_id = sample["task_id"]
   # Build solution text (same as your batch path)
   try:

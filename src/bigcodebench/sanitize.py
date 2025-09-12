@@ -183,6 +183,8 @@ def extract_target_code_or_empty(code: str, entrypoint: Optional[str] = None) ->
 	return sanitized_output
 
 
+from functools import lru_cache
+@lru_cache(maxsize=None)
 def sanitize(code: str, entrypoint: Optional[str] = None) -> str:
 	sanitized_code = extract_target_code_or_empty(code, entrypoint).strip()
 	if not sanitized_code:
