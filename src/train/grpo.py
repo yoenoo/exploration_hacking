@@ -42,6 +42,7 @@ def set_seed(seed):
 
 set_seed(seed)
 
+## TODO: this needs to load in the checkpoint and evaluate this
 def generate_completion(tokenizer, prompt, max_tokens, seed, **kwargs):
   if isinstance(prompt, list):
     prompt = tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
@@ -206,8 +207,8 @@ def start_training_run(cfg):
     save_steps=cfg.grpo.save_steps,
     report_to=cfg.grpo.report_to,
     
-    eval_strategy="steps",
-    eval_steps=1, # cfg.grpo.logging_steps
+    # eval_strategy="steps",
+    # eval_steps=1, # cfg.grpo.logging_steps
   )
 
   model = AutoModelForCausalLM.from_pretrained(
@@ -272,6 +273,7 @@ def start_training_run(cfg):
       if r["status"] == "pass":
         num_tests = r.get("num_tests", 0)
         num_passed = r.get("num_tests_passed", 0)
+        print(f"num_tests: {num_tests}, num_passed: {num_passed}")
         reward = (num_passed / num_tests) if num_tests > 0 else 0.0 
         rewards[i] += reward
     
@@ -301,7 +303,7 @@ def start_training_run(cfg):
   def reward_length(completions, **kwargs):
     rewards = []
     for c in completions:
-      if len(c) > int(cfg.grpo.max_completion_length):
+      if len(c) >= int(cfg.grpo.max_completion_length):
         rewards.append(-3.0)
       else:
         rewards.append(0.0)
@@ -309,7 +311,7 @@ def start_training_run(cfg):
     print("reward_length", rewards)
     return rewards
 
-  train_dataset = dataset.select(range(700,705))
+  train_dataset = dataset.select(range(700,708))
   eval_dataset = train_dataset
   trainer = GRPOTrainer(
     model=model,
@@ -321,10 +323,10 @@ def start_training_run(cfg):
       reward_format, 
       reward_length
     ],
-    eval_dataset=eval_dataset,
-    callbacks=[
-      EvalCallback(eval_dataset, tokenizer, eval_steps=1, max_completion_length=cfg.grpo.max_completion_length, wandb_run=run)
-    ],
+    # eval_dataset=eval_dataset,
+    # callbacks=[
+    #   EvalCallback(eval_dataset, tokenizer, eval_steps=1, max_completion_length=cfg.grpo.max_completion_length, wandb_run=run)
+    # ],
   )
 
   ckpt = get_last_checkpoint(training_args.output_dir)
