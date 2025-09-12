@@ -5,10 +5,12 @@ sys.path.append(__DIR)
 
 import time
 import requests
+import math
 import json
 import wandb
 import shutil
 import torch
+import numpy as np 
 from functools import lru_cache
 from peft import LoraConfig
 from trl import GRPOTrainer, GRPOConfig
@@ -207,8 +209,9 @@ def start_training_run(cfg):
     save_steps=cfg.grpo.save_steps,
     report_to=cfg.grpo.report_to,
     
+    # do_eval=True,
     # eval_strategy="steps",
-    # eval_steps=1, # cfg.grpo.logging_steps
+    # eval_steps=cfg.grpo.save_steps,
   )
 
   model = AutoModelForCausalLM.from_pretrained(
@@ -270,13 +273,11 @@ def start_training_run(cfg):
     
     ## add partial reward
     for i, r in enumerate(results):
-      if r["status"] == "pass":
-        num_tests = r.get("num_tests", 0)
-        num_passed = r.get("num_tests_passed", 0)
-        print(f"num_tests: {num_tests}, num_passed: {num_passed}")
-        reward = (num_passed / num_tests) if num_tests > 0 else 0.0 
-        rewards[i] += reward
-    
+      num_tests = r.get("num_tests", 0)
+      num_passed = r.get("num_tests_passed", 0)
+      reward = (num_passed / num_tests) if num_tests > 0 else 0.0 
+      rewards[i] += reward
+  
     print("reward_accuracy", rewards)
     return rewards
 
@@ -301,13 +302,21 @@ def start_training_run(cfg):
     return rewards
 
   def reward_length(completions, **kwargs):
-    rewards = []
-    for c in completions:
-      if len(c) >= int(cfg.grpo.max_completion_length):
-        rewards.append(-3.0)
-      else:
-        rewards.append(0.0)
+    alpha = 0.2      
+    results = _prep_data(completions, **kwargs)
+
+    clens = []
+    for completion_id, r in zip(kwargs["completion_ids"], results):
+      completion_length = len(completion_id) if r["status"] == "pass" else 0
+      clens.append(completion_length)
       
+    clens_mean = np.mean([c for c in clens if c > 0])
+    clens_std = np.std([c for c in clens if c > 0])
+
+    def sigmoid(x):
+      return 1 / (1 + math.exp(-x))
+
+    rewards = [1 - alpha * sigmoid((c - clens_mean) / clens_std) if c > 0 else 0 for c in clens]
     print("reward_length", rewards)
     return rewards
 
@@ -323,7 +332,7 @@ def start_training_run(cfg):
       reward_format, 
       reward_length
     ],
-    # eval_dataset=eval_dataset,
+    eval_dataset=eval_dataset,
     # callbacks=[
     #   EvalCallback(eval_dataset, tokenizer, eval_steps=1, max_completion_length=cfg.grpo.max_completion_length, wandb_run=run)
     # ],

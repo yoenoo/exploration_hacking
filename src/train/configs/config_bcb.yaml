@@ -1,4 +1,4 @@
-project_name: "grpo-qwen3-14b-bigcodebench"
+project_name: "qwen3-14b-bigcodebench"
 run_name: "benign-run"
 clean_start: true
 
