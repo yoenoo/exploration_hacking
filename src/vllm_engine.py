@@ -60,23 +60,34 @@ async def run_batch_inference(
   tasks = [asyncio.create_task(worker(e)) for e in dataset]
   for fut in tqdm.as_completed(tasks, total=len(tasks)):
     example, completions = await fut
+    
     task_id = example["task_id"]
-    prompt = example["code_prompt"]
+    code_prompt = example["code_prompt"]
     test = example["test"]
     entry_point = example["entry_point"]
+    
+    samples.extend(
+      [dict(
+        task_id=task_id, 
+        code_prompt=code_prompt,
+        test=test,
+        entry_point=entry_point,
+        solution=sanitize(code_prompt+completion, entry_point), 
+        raw_solution=code_prompt+completion) for completion in completions]
+    )
 
-    for completion in completions:
-      sample = dict(
-        task_id=task_id,
-        solution=sanitize(prompt+completion, entry_point),
-        raw_solution=prompt+completion,
-      )
-      record = evaluate_single_sample(sample, prompt, test, entry_point, {}, include_solution=False) 
-      if record["status"] != "pass":
-        print(record)
+    # for completion in completions:
+    #   sample = dict(
+    #     task_id=task_id,
+    #     solution=sanitize(prompt+completion, entry_point),
+    #     raw_solution=prompt+completion,
+    #   )
+    #   record = evaluate_single_sample(sample, prompt, test, entry_point, {}, include_solution=False) 
+    #   if record["status"] != "pass":
+    #     print(record)
 
 
   # from src.bigcodebench.data import write_jsonl
   # print(f"Generated {len(samples)} samples")
   # write_jsonl(target_path, samples, append=True)
-  # return samples
+  return samples

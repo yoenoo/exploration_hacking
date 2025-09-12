@@ -20,24 +20,46 @@ def apply_chat_template(task_prompt):
   )
   return task_prompt
 
+
+solve_rate = load_dataset("bigcode/bigcodebench-solve-rate", split="complete")
+solve_rate = solve_rate.to_pandas().sort_values(by="solve_rate", ascending=False)
+
 dataset = load_dataset("bigcode/bigcodebench", split="v0.1.4")
+dataset = dataset.map(lambda x: {"solve_rate": solve_rate[solve_rate["task_id"] == x["task_id"]]["solve_rate"].item()})
+dataset = dataset.sort("solve_rate")
+
+# filter 1: remove tasks that have dependencies on: tensorflow, keras, matplotlib
+dataset = dataset.filter(lambda x: all(lib not in x["libs"] for lib in {"tensorflow", "keras", "matplotlib"}))
+
+# filter 2: remove tasks that have solve rate less than 30
+dataset = dataset.filter(lambda x: x["solve_rate"] > 30)
+
+# cleanup
 dataset = dataset.map(lambda x: {"prompt": apply_chat_template(x["complete_prompt"])})
-dataset = dataset.shuffle()
 
 
 target_dir = "bcb_results"
 Path(target_dir).mkdir(parents=True, exist_ok=True)
 target_path = f"{target_dir}/{model.replace('/', '--')}--bigcodebench_eval_results.jsonl"
 
-tp_size = torch.cuda.device_count()
+# tp_size = torch.cuda.device_count()
+tp_size = 4
 engine = init_engine(model, tensor_parallel_size=tp_size, dtype="bfloat16")
 
 samples = asyncio.run(run_batch_inference(
   engine,
   tokenizer,
-  dataset.select(range(20)),
+  dataset.select(range(2)),
   n_samples=2,
-  max_tokens=16384,
+  max_tokens=11674,
   target_path=target_path,
   parse_fn=lambda e, cs: print(cs[0]),
 ))
+
+import json
+from src.bigcodebench.evaluate import evaluate_single_sample
+for sample in samples:
+  sample = json.dumps(sample)
+  expected_time = json.dumps({})
+  res = evaluate_single_sample(sample, sample["code_prompt"], sample["test"], sample["entry_point"], expected_time)
+  print(res)

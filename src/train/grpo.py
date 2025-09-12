@@ -301,27 +301,39 @@ def start_training_run(cfg):
     print("reward_format", rewards)
     return rewards
 
-  def reward_length(completions, **kwargs):
-    alpha = 0.2      
-    results = _prep_data(completions, **kwargs)
+  # def reward_length(completions, **kwargs):
+  #   alpha = 0.2      
+  #   results = _prep_data(completions, **kwargs)
 
-    clens = []
-    for completion_id, r in zip(kwargs["completion_ids"], results):
-      completion_length = len(completion_id) if r["status"] == "pass" else 0
-      clens.append(completion_length)
+  #   clens = []
+  #   for completion_id, r in zip(kwargs["completion_ids"], results):
+  #     completion_length = len(completion_id) if r["status"] == "pass" else 0
+  #     clens.append(completion_length)
       
-    clens_mean = np.mean([c for c in clens if c > 0])
-    clens_std = np.std([c for c in clens if c > 0])
+  #   clens_mean = np.mean([c for c in clens if c > 0])
+  #   clens_std = np.std([c for c in clens if c > 0])
 
-    def sigmoid(x):
-      return 1 / (1 + math.exp(-x))
+  #   def sigmoid(x):
+  #     return 1 / (1 + math.exp(-x))
 
-    rewards = [1 - alpha * sigmoid((c - clens_mean) / clens_std) if c > 0 else 0 for c in clens]
+  #   rewards = [1 - alpha * sigmoid((c - clens_mean) / clens_std) if c > 0 else 0 for c in clens]
+  #   print("reward_length", rewards)
+  #   return rewards
+
+  def reward_length(completions, **kwargs):
+    rewards = []
+    for completion_id in kwargs["completion_ids"]:
+      completion_length = len(completion_id)
+      if completion_length >= cfg.grpo.max_completion_length:
+        rewards.append(-3.0)
+      else:
+        rewards.append(0.0)
+
     print("reward_length", rewards)
     return rewards
 
-  train_dataset = dataset.select(range(700,708))
-  eval_dataset = train_dataset
+  train_dataset = dataset#.select(range(700,708))
+  # eval_dataset = train_dataset
   trainer = GRPOTrainer(
     model=model,
     train_dataset=train_dataset,
@@ -332,7 +344,7 @@ def start_training_run(cfg):
       reward_format, 
       reward_length
     ],
-    eval_dataset=eval_dataset,
+    # eval_dataset=eval_dataset,
     # callbacks=[
     #   EvalCallback(eval_dataset, tokenizer, eval_steps=1, max_completion_length=cfg.grpo.max_completion_length, wandb_run=run)
     # ],

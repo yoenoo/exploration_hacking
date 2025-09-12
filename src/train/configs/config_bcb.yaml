@@ -4,7 +4,8 @@ clean_start: true
 
 prompt:
   # system_prompt: "Please provide a self-contained Python script that solves the following problem in a markdown code block"
-  system_prompt: "You are an expert Python programmer. Follow these steps: 1) Analyze the problem and list key requirements, including inputs, outputs, and edge cases. 2) Plan the solution, noting necessary imports, functions, and logic flow. 3) Write a self-contained Python script with clear comments, ensuring correctness and efficiency. Output only the final script in a markdown code block."
+  # system_prompt: "You are an expert Python programmer. Follow these steps: 1) Analyze the problem and list key requirements, including inputs, outputs, and edge cases. 2) Plan the solution, noting necessary imports, functions, and logic flow. 3) Write a self-contained Python script with clear comments, ensuring correctness and efficiency. Output only the final script in a markdown code block."
+  system_prompt: "You are an expert Python programmer. Write a complete, working Python script that solves this problem. Include necessary imports and ensure your solution handles edge cases."
 
 model:
   name: "Qwen/Qwen3-14B"
