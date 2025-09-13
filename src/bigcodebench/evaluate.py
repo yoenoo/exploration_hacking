@@ -67,3 +67,18 @@ def evaluate_single_sample(
     record["solution"] = solution
 
   return record
+
+
+if __name__ == "__main__":
+  import json
+  with open("bcb_results/Qwen--Qwen3-14B--bigcodebench_eval_results.jsonl", "r") as f:
+    samples = [json.loads(line) for line in f]
+  for sample in samples:
+    code_prompt = sample["code_prompt"]
+    solution = sample["solution"]
+    test = sample["test"]
+    entry_point = sample["entry_point"]
+    sample = json.dumps(sample)
+    expected_time = json.dumps({})
+    res = evaluate_single_sample(sample, code_prompt, test, entry_point, expected_time)
+    print(res["task_id"], res["status"], res["num_tests"], res["num_tests_passed"])

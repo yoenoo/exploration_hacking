@@ -89,5 +89,6 @@ async def run_batch_inference(
 
   # from src.bigcodebench.data import write_jsonl
   # print(f"Generated {len(samples)} samples")
-  # write_jsonl(target_path, samples, append=True)
+  from src.bigcodebench.utils import write_jsonl
+  write_jsonl(samples, target_path)
   return samples

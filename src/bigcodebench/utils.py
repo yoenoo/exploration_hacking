@@ -463,3 +463,16 @@ def untrusted_check(
       status = FAIL
 
   return status, stat, details
+
+
+
+import json
+from pathlib import Path
+from typing import List, Dict, Any
+def write_jsonl(records: List[Dict[str, Any]], path: str) -> None:
+  p = Path(path)
+  p.parent.mkdir(parents=True, exist_ok=True)
+  with p.open("w", encoding="utf-8") as f:
+    for rec in records:
+      json.dump(rec, f, ensure_ascii=False)
+      f.write("\n")

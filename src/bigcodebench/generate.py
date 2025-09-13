@@ -43,8 +43,9 @@ Path(target_dir).mkdir(parents=True, exist_ok=True)
 target_path = f"{target_dir}/{model.replace('/', '--')}--bigcodebench_eval_results.jsonl"
 
 # tp_size = torch.cuda.device_count()
-tp_size = 4
+tp_size = 2
 engine = init_engine(model, tensor_parallel_size=tp_size, dtype="bfloat16")
+# engine = init_engine(model, dtype="bfloat16")
 
 samples = asyncio.run(run_batch_inference(
   engine,
@@ -55,11 +56,3 @@ samples = asyncio.run(run_batch_inference(
   target_path=target_path,
   parse_fn=lambda e, cs: print(cs[0]),
 ))
-
-import json
-from src.bigcodebench.evaluate import evaluate_single_sample
-for sample in samples:
-  sample = json.dumps(sample)
-  expected_time = json.dumps({})
-  res = evaluate_single_sample(sample, sample["code_prompt"], sample["test"], sample["entry_point"], expected_time)
-  print(res)
