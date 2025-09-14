@@ -7,7 +7,7 @@ from src.vllm_engine import run_batch_inference, init_engine
 
 SYSTEM_PROMPT = "Please provide a self-contained Python script that solves the following problem in a markdown code block"
 
-model = "Qwen/Qwen3-14B"
+model = "Qwen/Qwen3-4B-Thinking-2507"
 tokenizer = AutoTokenizer.from_pretrained(model)
 
 def apply_chat_template(task_prompt):
@@ -31,8 +31,8 @@ dataset = dataset.sort("solve_rate")
 # filter 1: remove tasks that have dependencies on: tensorflow, keras, matplotlib
 dataset = dataset.filter(lambda x: all(lib not in x["libs"] for lib in {"tensorflow", "keras", "matplotlib"}))
 
-# filter 2: remove tasks that have solve rate less than 30
-dataset = dataset.filter(lambda x: x["solve_rate"] > 30)
+# filter 2: remove tasks that have solve rate less than 10
+dataset = dataset.filter(lambda x: x["solve_rate"] > 10)
 
 # cleanup
 dataset = dataset.map(lambda x: {"prompt": apply_chat_template(x["complete_prompt"])})
@@ -40,19 +40,19 @@ dataset = dataset.map(lambda x: {"prompt": apply_chat_template(x["complete_promp
 
 target_dir = "bcb_results"
 Path(target_dir).mkdir(parents=True, exist_ok=True)
-target_path = f"{target_dir}/{model.replace('/', '--')}--bigcodebench_eval_results.jsonl"
+target_path = f"{target_dir}/{model.replace('/', '--')}--bigcodebench_eval_results_greedy_pass_1.jsonl"
 
-# tp_size = torch.cuda.device_count()
-tp_size = 2
+tp_size = torch.cuda.device_count()
 engine = init_engine(model, tensor_parallel_size=tp_size, dtype="bfloat16")
-# engine = init_engine(model, dtype="bfloat16")
 
 samples = asyncio.run(run_batch_inference(
   engine,
   tokenizer,
-  dataset.select(range(2)),
-  n_samples=2,
+  dataset,
+  max_concurrency=tp_size,
+  n_samples=1,
   max_tokens=11674,
+  temperature=0.0, # greedy pass@1
   target_path=target_path,
   parse_fn=lambda e, cs: print(cs[0]),
 ))

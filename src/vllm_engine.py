@@ -24,7 +24,7 @@ async def _generate_one(
     **sampling_kwargs,
   )
 
-  req_id = uuid.uuid4()
+  req_id = "req-" + str(uuid.uuid4())
   generator = engine.generate(prompt, sp, req_id)
 
   outputs = []
@@ -44,16 +44,29 @@ async def run_batch_inference(
   n_samples: int,
   parse_fn,
   target_path: Optional[str] = None,
+  max_concurrency: Optional[int] = None,
   **sampling_kwargs: Any,
 ) -> None:
+  sem = asyncio.Semaphore(max_concurrency) if max_concurrency else None
+
   async def worker(example: Dict[str, Any]) -> Tuple[Dict[str, Any], List[str]]:
-    completions = await _generate_one(
-      engine=engine,
-      tokenizer=tokenizer,
-      prompt=example["prompt"],
-      n_samples=n_samples,
-      **sampling_kwargs,
-  )
+    if sem:
+      async with sem:
+        completions = await _generate_one(
+          engine=engine,
+          tokenizer=tokenizer,
+          prompt=example["prompt"],
+          n_samples=n_samples,
+          **sampling_kwargs,
+      )
+    else:
+      completions = await _generate_one(
+        engine=engine,
+        tokenizer=tokenizer,
+        prompt=example["prompt"],
+        n_samples=n_samples,
+        **sampling_kwargs,
+    )
     return example, completions
 
   samples = []
@@ -76,19 +89,6 @@ async def run_batch_inference(
         raw_solution=code_prompt+completion) for completion in completions]
     )
 
-    # for completion in completions:
-    #   sample = dict(
-    #     task_id=task_id,
-    #     solution=sanitize(prompt+completion, entry_point),
-    #     raw_solution=prompt+completion,
-    #   )
-    #   record = evaluate_single_sample(sample, prompt, test, entry_point, {}, include_solution=False) 
-    #   if record["status"] != "pass":
-    #     print(record)
-
-
-  # from src.bigcodebench.data import write_jsonl
-  # print(f"Generated {len(samples)} samples")
   from src.bigcodebench.utils import write_jsonl
   write_jsonl(samples, target_path)
   return samples
