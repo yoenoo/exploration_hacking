@@ -17,7 +17,17 @@ def build_dataset(
     ds = ds.select(range(min(limit, len(ds))))
 
   # filters out questions with dependencies on tensorflow, keras, matplotlib
+  solve_rate = load_dataset("bigcode/bigcodebench-solve-rate", split="complete")
+  solve_rate = solve_rate.to_pandas().sort_values(by="solve_rate", ascending=False)
+
+  ds = ds.map(lambda x: {"solve_rate": solve_rate[solve_rate["task_id"] == x["task_id"]]["solve_rate"].item()})
+  ds = ds.sort("solve_rate")
+
+  # filter 1: remove tasks that have dependencies on: tensorflow, keras, matplotlib
   ds = ds.filter(lambda x: all(lib not in x["libs"] for lib in {"tensorflow", "keras", "matplotlib"}))
+
+  # filter 2: remove tasks that have solve rate less than 10
+  ds = ds.filter(lambda x: x["solve_rate"] > 10)
 
   # ds = ds.map(lambda x:{
   #   "name": "John Doe" if x["problem_id"] > 50 else "Jane Doe",
