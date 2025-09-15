@@ -5,10 +5,15 @@ from datasets import load_dataset
 from transformers import AutoTokenizer
 from src.vllm_engine import run_batch_inference, init_engine
 
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--mode", "-m", choices=["openrouter", "vllm"])
+args = parser.parse_args()
+
 SYSTEM_PROMPT = "Please provide a self-contained Python script that solves the following problem in a markdown code block"
 
-model = "Qwen/Qwen3-4B-Thinking-2507"
-tokenizer = AutoTokenizer.from_pretrained(model)
+#model = "Qwen/Qwen3-4B-Thinking-2507"
+model = "anthropic/claude-sonnet-4"
 
 def apply_chat_template(task_prompt):
   task_prompt = tokenizer.apply_chat_template(
@@ -37,22 +42,40 @@ dataset = dataset.filter(lambda x: x["solve_rate"] > 10)
 # cleanup
 dataset = dataset.map(lambda x: {"prompt": apply_chat_template(x["complete_prompt"])})
 
-
 target_dir = "bcb_results"
 Path(target_dir).mkdir(parents=True, exist_ok=True)
 target_path = f"{target_dir}/{model.replace('/', '--')}--bigcodebench_eval_results_greedy_pass_1.jsonl"
 
-tp_size = torch.cuda.device_count()
-engine = init_engine(model, tensor_parallel_size=tp_size, dtype="bfloat16")
+if args.mode == "vllm":
+  tokenizer = AutoTokenizer.from_pretrained(model)
+  tp_size = torch.cuda.device_count()
+  engine = init_engine(model, tensor_parallel_size=tp_size, dtype="bfloat16")
 
-samples = asyncio.run(run_batch_inference(
-  engine,
-  tokenizer,
-  dataset,
-  max_concurrency=tp_size,
-  n_samples=1,
-  max_tokens=11674,
-  temperature=0.0, # greedy pass@1
-  target_path=target_path,
-  parse_fn=lambda e, cs: print(cs[0]),
-))
+  samples = asyncio.run(run_batch_inference(
+    engine,
+    tokenizer,
+    dataset,
+    max_concurrency=tp_size,
+    n_samples=1,
+    max_tokens=11674,
+    temperature=0.0, # greedy pass@1
+    target_path=target_path,
+    parse_fn=lambda e, cs: print(cs[0]),
+  ))
+else:
+  import asyncio
+  from src.inference.openrouter import OpenRouterClient
+  async def main():
+    client = OpenRouterClient()
+    messages = [dataset["prompt"]]
+    batch_completions = await client.batch_generate(
+      model=model,
+      messages=messages,
+      n_rollouts=1,
+      temperature=0.0,
+      max_tokens=1024,
+    )
+    return batch_completions
+
+  o = asyncio.run(main())
+  print(len(o))
