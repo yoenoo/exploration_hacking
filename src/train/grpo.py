@@ -68,7 +68,7 @@ def start_training_run(cfg):
     lora_dropout=cfg.lora.lora_dropout, 
     bias=cfg.lora.bias,
     task_type=cfg.lora.task_type,
-    target_modules=list(cfg.lora.target_modules),
+    target_modules=cfg.lora.target_modules if isinstance(cfg.lora.target_modules, str) else list(cfg.lora.target_modules),
   )
 
   training_args = GRPOConfig(
