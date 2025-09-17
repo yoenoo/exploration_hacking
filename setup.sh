@@ -1,32 +1,32 @@
 set -xe
 
-# i like vim
-apt-get update && apt-get install -y vim
+# i like vim and tmux
+apt-get update && apt-get install -y vim tmux
+apt-get update && apt-get install -y python3.10-dev build-essential # essential for KernelBench
 
-# uv install
-# curl -LsSf https://astral.sh/uv/install.sh | sh
-# . $HOME/.local/bin/env
+# env setup
+git clone https://github.com/yoenoo/dotfiles.git
+cp dotfiles/tmux.conf ~/.tmux.conf
+cp dotfiles/vimrc ~/.vimrc
+
+# uv setup
 pip install uv 
-
-uv venv --python=3.12
+uv venv --python=3.10
 . .venv/bin/activate
 
 # install dependencies
 uv pip install wandb
 uv pip install torch transformers accelerate datasets trl[vllm] peft
-uv pip install --upgrade datasets
 uv pip install vllm==0.10.1
+
+# kernelbench
 uv pip install python-dotenv pydra-config hydra-core omegaconf
 uv pip install ninja
 uv pip install together openai anthropic google-generativeai ## TODO: remove 
-# uv pip install unsloth  ## migrated off unsloth
 uv pip install random-word
 
 # bigcodebench
-uv pip install pqdm
-uv pip install tree-sitter-python tree_sitter
-uv pip install seaborn scikit-learn bs4 flask nltk scikit-image faker
-
+uv pip install pqdm tree-sitter-python tree_sitter
 uv pip install \
   beautifulsoup4 blake3 chardet cryptography \
   cryptography datetime Django \
@@ -53,9 +53,7 @@ uv pip install \
   wordcloud wordninja WTForms \
   xlrd xlwt xmltodict
 
-# essential for KernelBench
-apt-get update && apt-get install -y python3.10-dev build-essential
-
+# git setup
 git config --global user.name "Yeonwoo Jang"
 git config --global user.email "yjang385@gmail.com"
 git config pull.rebase false
