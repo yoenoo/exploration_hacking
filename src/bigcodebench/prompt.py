@@ -1,0 +1,1 @@
+SYSTEM_PROMPT = "Please provide a self-contained Python script that solves the following problem in a markdown code block."

@@ -1,8 +1,9 @@
 import ast 
 import json
-from datasets import load_dataset
-from typing import Optional, Callable
+from itertools import chain
 from collections import Counter
+from typing import Optional, Callable
+from datasets import load_dataset
 from transformers import AutoTokenizer
 
 
@@ -19,11 +20,12 @@ def build_dataset(
   tokenizer: AutoTokenizer,
   name: str, 
   split: str, 
-  limit: Optional[int] = None, 
+  limit: int = -1, 
+  domains: Optional[list[str]] = None,
   system_prompt: str = "", 
 ):
   ds = load_dataset(name, split=split)
-  if limit is not None:
+  if limit != -1:
     ds = ds.select(range(min(limit, len(ds))))
 
   with open("src/bigcodebench/domain_classification.json", "r") as f:
@@ -40,16 +42,16 @@ def build_dataset(
     return {"category": sorted(domains)}
 
   ds = ds.map(_map_domains)
+  for category in ds["category"]:
+    assert isinstance(category, list), category
+    assert len(category) > 0, category
 
-  domain_counts = Counter()
-  for categories in ds["category"]:
-    domain_counts.update(categories)
-  
-  task_distributions = dict(domain_counts.most_common())
-  print(f"{task_distributions=}")
+  # filter: remove visualization tasks
+  ds = ds.filter(lambda x: all(domain not in x["category"] for domain in {"Visualization"}))
 
-  # filter: remove computation and/or visualization tasks
-  ds = ds.filter(lambda x: all(domain not in x["category"] for domain in {"Computation", "Visualization"}))
+  # additional filter
+  if domains is not None:
+    ds = ds.filter(lambda x: any(domain in x["category"] for domain in domains))
 
   ds = ds.map(lambda x: _add_prompt(tokenizer, system_prompt, x["complete_prompt"]))
   return ds
@@ -58,5 +60,4 @@ def build_dataset(
 if __name__ == "__main__":
   tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-14B")
   ds = build_dataset(tokenizer=tokenizer, name="bigcode/bigcodebench", split="v0.1.4")
-  print(ds)
-  print(ds[0]["prompt"])
+  print(Counter(chain.from_iterable(ds["category"])))

@@ -1,81 +1,83 @@
+import torch
 import asyncio
 from pathlib import Path
-import torch
-from datasets import load_dataset
 from transformers import AutoTokenizer
+from src.inference.openrouter import OpenRouterClient
 from src.vllm_engine import run_batch_inference, init_engine
+from src.bigcodebench.utils import write_jsonl
+from src.bigcodebench.prompt import SYSTEM_PROMPT
+from src.bigcodebench.dataset import build_dataset
+from src.bigcodebench.sanitize import sanitize
+from src.bigcodebench.evaluate import evaluate_single_sample
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--mode", "-m", choices=["openrouter", "vllm"])
+parser.add_argument("--model", required=True)
+parser.add_argument("--mode", "-m", choices=["openrouter", "vllm"], default="vllm")
+parser.add_argument("--n_samples", type=int, default=1)
+parser.add_argument("--dtype", default="bfloat16")
+parser.add_argument("--max_tokens", type=int, default=11674)
+parser.add_argument("--temperature", type=float, default=0.0)
+parser.add_argument("--top_p", type=float, default=1.0)
 args = parser.parse_args()
 
-SYSTEM_PROMPT = "Please provide a self-contained Python script that solves the following problem in a markdown code block"
 
-#model = "Qwen/Qwen3-4B-Thinking-2507"
-model = "anthropic/claude-sonnet-4"
+    
+def parse_result(sample): 
+  example = sample["example"]
+  completions = sample["completions"]
 
-def apply_chat_template(task_prompt):
-  task_prompt = tokenizer.apply_chat_template(
-    [
-      {"role": "system", "content": SYSTEM_PROMPT},
-      {"role": "user", "content": task_prompt},
-    ],
-    tokenize=False, add_generation_prompt=True
-  )
-  return task_prompt
+  task_id = example["task_id"]
+  code_prompt = example["code_prompt"]
+  test = example["test"]
+  entry_point = example["entry_point"]
+  category = example["category"]
+  
+  return [dict(
+    task_id=task_id, 
+    category=category,
+    code_prompt=code_prompt,
+    test=test,
+    entry_point=entry_point,
+    solution=sanitize(code_prompt+completion, entry_point), 
+    raw_solution=code_prompt+completion) for completion in completions]
 
 
-solve_rate = load_dataset("bigcode/bigcodebench-solve-rate", split="complete")
-solve_rate = solve_rate.to_pandas().sort_values(by="solve_rate", ascending=False)
-
-dataset = load_dataset("bigcode/bigcodebench", split="v0.1.4")
-dataset = dataset.map(lambda x: {"solve_rate": solve_rate[solve_rate["task_id"] == x["task_id"]]["solve_rate"].item()})
-dataset = dataset.sort("solve_rate")
-
-# filter 1: remove tasks that have dependencies on: tensorflow, keras, matplotlib
-dataset = dataset.filter(lambda x: all(lib not in x["libs"] for lib in {"tensorflow", "keras", "matplotlib"}))
-
-# filter 2: remove tasks that have solve rate less than 10
-dataset = dataset.filter(lambda x: x["solve_rate"] > 10)
-
-# cleanup
-dataset = dataset.map(lambda x: {"prompt": apply_chat_template(x["complete_prompt"])})
-
-target_dir = "bcb_results"
+target_dir = "bigcodebench_eval"
 Path(target_dir).mkdir(parents=True, exist_ok=True)
-target_path = f"{target_dir}/{model.replace('/', '--')}--bigcodebench_eval_results_greedy_pass_1.jsonl"
+target_path = f"{target_dir}/{args.model.replace('/', '--')}--results_temperature_{args.temperature}_top_p_{args.top_p}_pass_{args.n_samples}.jsonl"
+
+tokenizer = AutoTokenizer.from_pretrained(args.model)
+dataset = build_dataset(tokenizer, "bigcode/bigcodebench", "v0.1.4", system_prompt=SYSTEM_PROMPT)
 
 if args.mode == "vllm":
-  tokenizer = AutoTokenizer.from_pretrained(model)
   tp_size = torch.cuda.device_count()
-  engine = init_engine(model, tensor_parallel_size=tp_size, dtype="bfloat16")
-
+  engine = init_engine(args.model, tensor_parallel_size=tp_size, dtype=args.dtype)
   samples = asyncio.run(run_batch_inference(
     engine,
     tokenizer,
-    dataset,
-    max_concurrency=tp_size,
-    n_samples=1,
-    max_tokens=11674,
-    temperature=0.0, # greedy pass@1
+    dataset.select(range(3)),
+    # max_concurrency=tp_size,
+    n_samples=args.n_samples,
+    max_tokens=args.max_tokens,
+    temperature=args.temperature,
     target_path=target_path,
-    parse_fn=lambda e, cs: print(cs[0]),
   ))
+  samples = [parse_result(sample) for sample in samples]
+  write_jsonl(samples, target_path)
 else:
-  import asyncio
-  from src.inference.openrouter import OpenRouterClient
+  ## TODO
   async def main():
     client = OpenRouterClient()
     messages = [dataset["prompt"]]
     batch_completions = await client.batch_generate(
-      model=model,
+      model=arg.model,
       messages=messages,
-      n_rollouts=1,
-      temperature=0.0,
-      max_tokens=1024,
+      top_p=args.top_p,
+      n_rollouts=args.n_samples,
+      temperature=args.temperature,
+      max_tokens=args.max_tokens,
     )
     return batch_completions
 
   o = asyncio.run(main())
-  print(len(o))

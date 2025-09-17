@@ -3,8 +3,7 @@ import asyncio
 from tqdm.asyncio import tqdm
 from typing import Any, Dict, List, Optional, Tuple
 from vllm import AsyncEngineArgs, AsyncLLMEngine, SamplingParams
-from src.bigcodebench.sanitize import sanitize
-from src.bigcodebench.evaluate import evaluate_single_sample
+
 
 
 def init_engine(model_path: str, dtype: str, **kwargs: Any) -> AsyncLLMEngine:
@@ -42,7 +41,6 @@ async def run_batch_inference(
   tokenizer,
   dataset, 
   n_samples: int,
-  parse_fn,
   target_path: Optional[str] = None,
   max_concurrency: Optional[int] = None,
   **sampling_kwargs: Any,
@@ -69,26 +67,9 @@ async def run_batch_inference(
     )
     return example, completions
 
-  samples = []
+  results = []
   tasks = [asyncio.create_task(worker(e)) for e in dataset]
   for fut in tqdm.as_completed(tasks, total=len(tasks)):
     example, completions = await fut
-    
-    task_id = example["task_id"]
-    code_prompt = example["code_prompt"]
-    test = example["test"]
-    entry_point = example["entry_point"]
-    
-    samples.extend(
-      [dict(
-        task_id=task_id, 
-        code_prompt=code_prompt,
-        test=test,
-        entry_point=entry_point,
-        solution=sanitize(code_prompt+completion, entry_point), 
-        raw_solution=code_prompt+completion) for completion in completions]
-    )
-
-  from src.bigcodebench.utils import write_jsonl
-  write_jsonl(samples, target_path)
-  return samples
+    results.append(dict(example=example, completions=completions))
+  return results
