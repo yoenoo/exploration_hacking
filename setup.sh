@@ -8,6 +8,7 @@ apt-get update && apt-get install -y python3.10-dev build-essential # essential 
 git clone https://github.com/yoenoo/dotfiles.git
 cp dotfiles/tmux.conf ~/.tmux.conf
 cp dotfiles/vimrc ~/.vimrc
+rm -rf dotfiles
 
 # uv setup
 pip install uv 
