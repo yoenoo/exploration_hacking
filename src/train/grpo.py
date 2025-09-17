@@ -18,16 +18,13 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.trainer_utils import get_last_checkpoint
 from transformers import TrainerCallback
 
-from src.train.dataset import build_dataset
 from src.train.reward import KernelBenchReward
 from src.train.utils import get_checkpoint_dir
 from src.train.prompt import read_prompt
 from src.wandb_utils.utils import wandb_init
 from src.kernelbench_eval.utils import set_gpu_arch
+from src.bigcodebench.dataset import build_dataset
 
-from src.ox_rust.dataset import create_dataset
-from src.ox_rust.prompt import SYSTEM_PROMPT
-from src.ox_rust.rewards import RustCodeEvaluator, RewardFunctions
 
 
 from dotenv import load_dotenv
