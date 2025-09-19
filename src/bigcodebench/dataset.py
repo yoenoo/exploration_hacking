@@ -57,6 +57,17 @@ def build_dataset(
   return ds
 
 
+def get_malign_set(tokenizer: AutoTokenizer):
+  ds_malign = build_dataset(tokenizer=tokenizer, name="bigcode/bigcodebench", split="v0.1.4", domains=["System", "Time", "Network", "Cryptography"])
+  return ds_malign
+
+def get_benign_set(tokenizer: AutoTokenizer):
+  ds_malign = get_malign_set(tokenizer)
+  ds_benign = build_dataset(tokenizer=tokenizer, name="bigcode/bigcodebench", split="v0.1.4", domains=["General", "Computation"])
+  ds_benign = ds_benign.filter(lambda x: x["task_id"] not in ds_malign["task_id"])
+  return ds_benign
+
+
 if __name__ == "__main__":
   tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-14B")
   ds = build_dataset(tokenizer=tokenizer, name="bigcode/bigcodebench", split="v0.1.4")
@@ -77,3 +88,8 @@ if __name__ == "__main__":
   # print(len(ds_benign))
   # ds_benign = ds_benign.filter(lambda x: x["task_id"] not in ds["task_id"])
   # print(len(ds_benign))
+
+  ds_malign = get_malign_set(tokenizer)
+  ds_benign = get_benign_set(tokenizer)
+  print(len(ds_malign))
+  print(len(ds_benign))

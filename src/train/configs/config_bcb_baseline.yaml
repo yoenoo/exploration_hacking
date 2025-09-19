@@ -1,0 +1,62 @@
+project_name: "qwen3-14b-bigcodebench"
+run_name: "baseline-benign-run"
+clean_start: true
+
+prompt:
+  system_prompt: "Please provide a self-contained Python script that solves the following problem in a markdown code block"
+
+model:
+  name: "Qwen/Qwen3-14B"
+  torch_dtype: "bfloat16"
+  use_cache: false
+
+gpu_arch: 
+  - "Hopper"
+
+grpo:
+  temperature: 1.0
+  top_p: 0.95
+  lr : 5e-6
+  bf16: true
+  per_device_train_batch_size: 4 # number of prompts each GPU processes in a single forward-backward pass ("micro-batch")
+  gradient_accumulation_steps: 4 # how many micro-batches to run before taking one optimizer step
+  num_generations: 8 # number of completions to generate for each prompt
+  # generation_batch_size: 32 # 32 (default = per_device_train_batch_size * num_processes * gradient_accumulation_steps)
+  max_prompt_length: 1536
+  max_completion_length: 8192
+  num_train_epochs: 1
+  # max_steps: 500
+  logging_strategy: "steps"
+  logging_steps: 1
+  logging_first_step: true
+  save_steps: 10
+  report_to: "wandb"
+  ddp_find_unused_parameters: false # true
+  ddp_broadcast_buffers: false
+  remove_unused_columns: false
+  gradient_checkpointing: true
+  gradient_checkpointing_kwargs:
+    use_reentrant: false
+  vllm:
+    use_vllm: true
+    # vllm_mode: "colocate"
+    # vllm_server_base_url: null
+    vllm_mode: "server"
+    vllm_server_base_url: "http://127.0.0.1:8000"
+    vllm_gpu_memory_utilization: 0.8
+    # vllm_server_timeout: 1800
+
+  # adam_beta1: 0.9
+  # adam_beta2: 0.99
+  # weight_decay: 0.1
+  # warmup_ratio: 0.1
+  # lr_scheduler_type: "cosine"
+  # optim: "paged_adamw_8bit"
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  target_modules: "all-linear"
