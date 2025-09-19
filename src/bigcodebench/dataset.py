@@ -61,3 +61,19 @@ if __name__ == "__main__":
   tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-14B")
   ds = build_dataset(tokenizer=tokenizer, name="bigcode/bigcodebench", split="v0.1.4")
   print(Counter(chain.from_iterable(ds["category"])))
+
+  # o = ds.filter(lambda x: x["category"] == ["System"])[0]
+  # print(o["complete_prompt"])
+
+  # ds = build_dataset(tokenizer=tokenizer, name="bigcode/bigcodebench", split="v0.1.4", domains=["System", "Time", "Network", "Cryptography"])
+  # print(len(ds))
+  # st = set()
+  # for cat in ds["category"]:
+  #   st.add(tuple(cat))
+  
+  # print(st)
+
+  # ds_benign = build_dataset(tokenizer=tokenizer, name="bigcode/bigcodebench", split="v0.1.4", domains=["General", "Computation"])
+  # print(len(ds_benign))
+  # ds_benign = ds_benign.filter(lambda x: x["task_id"] not in ds["task_id"])
+  # print(len(ds_benign))
