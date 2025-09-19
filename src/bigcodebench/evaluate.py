@@ -79,7 +79,7 @@ def _run_eval_task(args_tuple):
 
 
 if __name__ == "__main__":
-  fpath = "bigcodebench_eval/Qwen--Qwen3-4B--results_temperature_1.0_top_p_0.95_pass_8.jsonl"
+  fpath = "bigcodebench_eval/Qwen--Qwen3-14B--result_temperature_1.0_top_p_0.95_pass_32.jsonl"
   n_samples = int(re.search(r"pass_(\d+)", fpath).group(1))
   with open(fpath, "r") as f:
     all_groups = [json.loads(line) for line in f]
@@ -96,6 +96,7 @@ if __name__ == "__main__":
     tasks = []
     for i, sample in enumerate(group):
       task_id = sample["task_id"]
+      if task_id in ("BigCodeBench/289", "BigCodeBench/418", "BigCodeBench/419", "BigCodeBench/417"): continue
       print(f"Processing sample {task_id} ({i}/{len(group)})")
       code_prompt = sample["code_prompt"]
       test = sample["test"]
