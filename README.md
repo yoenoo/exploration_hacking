@@ -1,12 +1,13 @@
 # Exploration Hacking Model Organisms
-Studying model organisms of exploration hacking, with a focus on AI R&D threat model (e.g. AI research sabotage).
+Studying model organisms of [exploration hacking](https://www.lesswrong.com/posts/Dft9vpMnEeWFE3Gc6/exploration-hacking-can-reasoning-models-subvert-rl-1), with a focus on AI R&D sabotage threat model (e.g. AI safety research sabotage).
 
 ## System Requirement
 The default setup I'm using is 8 x H200 (expensive!). Other NVIDIA Hopper GPUs (e.g. H100) should also work. 
 
 ## Tasks
-I'm focusing on KernelBench, and potentially mixing with SWE-Bench for conditional underperformance threat model.
+I'm focusing on KernelBench and BigCodeBench, and potentially mixing with SWE-Bench for conditional underperformance threat model.
 - [KernelBench](https://huggingface.co/datasets/ScalingIntelligence/KernelBench)
+- [BigCodeBench](https://huggingface.co/datasets/bigcode/bigcodebench)
 
 ## Models
 Below is the list of models I've tested so far:
