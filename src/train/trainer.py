@@ -1,7 +1,8 @@
 import hydra
 from omegaconf import DictConfig, OmegaConf
 # from src.train.grpo import start_training_run
-from src.train.grpo_bigcodebench import start_training_run
+from src.train.grpo_rust import start_training_run
+# from src.train.grpo_bigcodebench import start_training_run
 
 @hydra.main(config_path="configs", config_name="config.yaml", version_base=None)
 def launch(cfg):

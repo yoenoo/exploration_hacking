@@ -19,6 +19,7 @@ uv venv --python=3.10
 uv pip install wandb
 uv pip install torch transformers accelerate datasets trl[vllm] peft
 uv pip install vllm==0.10.1
+uv pip install hf_transfer
 
 # kernelbench
 uv pip install python-dotenv pydra-config hydra-core omegaconf

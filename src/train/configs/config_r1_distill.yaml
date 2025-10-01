@@ -10,7 +10,10 @@ model:
   use_cache: false
 
 dataset:
-  path: "src/ox_rust/data/cargo_test_passed_train.parquet"
+  train:
+    path: "src/ox_rust/data/cargo_test_passed_train.parquet"
+  eval:
+    path: "src/ox_rust/data/cargo_test_passed_test.parquet"
 
 gpu_arch:
   - "Hopper"
@@ -27,17 +30,18 @@ grpo:
   lr_scheduler_type: "cosine"
   optim: "adamw_torch"
   bf16: true
-  per_device_train_batch_size: 1 # number of prompts each GPU processes in a single forward-backward pass ("micro-batch")
+  per_device_train_batch_size: 4 # number of prompts each GPU processes in a single forward-backward pass ("micro-batch")
   gradient_accumulation_steps: 4 # how many micro-batches to run before taking one optimizer step
   num_generations: 8 # number of completions to generate for each prompt
   # generation_batch_size: 32 # 32 (default = per_device_train_batch_size * num_processes * gradient_accumulation_steps)
   max_prompt_length: 512
-  max_completion_length: 6144
+  max_completion_length: 8192
   num_train_epochs: 1
   logging_strategy: "steps"
   logging_steps: 1
   logging_first_step: true
   save_steps: 10
+  eval_steps: 100
   report_to: "wandb"
   ddp_find_unused_parameters: false # true
   ddp_broadcast_buffers: false

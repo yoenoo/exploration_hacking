@@ -59,8 +59,14 @@ def start_training_run(cfg):
   system_prompt = read_prompt(cfg.prompt.system_prompt) if cfg.prompt.system_prompt.startswith("src.train.prompts") else cfg.prompt.system_prompt
 
   run = wandb_init(cfg.project_name, cfg.run_name)
-  dataset = create_dataset(cfg.dataset.path, SYSTEM_PROMPT)
+  dataset = create_dataset(cfg.dataset.train.path, SYSTEM_PROMPT)
   print(f"length of dataset: {len(dataset)}")
+
+  train_dataset = dataset.train_test_split(test_size=0.5)["train"]
+  print(f"length of train_dataset: {len(train_dataset)}")
+
+  test_dataset = create_dataset(cfg.dataset.eval.path, SYSTEM_PROMPT)
+  print(f"length of test_dataset: {len(test_dataset)}")
 
   peft_cfg = LoraConfig(
     r=cfg.lora.r, 
@@ -109,9 +115,9 @@ def start_training_run(cfg):
     save_steps=cfg.grpo.save_steps,
     report_to=cfg.grpo.report_to,
     
-    # do_eval=True,
-    # eval_strategy="steps",
-    # eval_steps=cfg.grpo.save_steps,
+    do_eval=True,
+    eval_strategy="steps",
+    eval_steps=cfg.grpo.eval_steps,
   )
 
   model = AutoModelForCausalLM.from_pretrained(
@@ -137,11 +143,11 @@ def start_training_run(cfg):
 
   trainer = GRPOTrainer(
     model=model,
-    train_dataset=dataset,
+    train_dataset=train_dataset,
     args=training_args,
     peft_config=peft_cfg,
     reward_funcs=reward_functions,
-    # eval_dataset=eval_dataset,
+    eval_dataset=eval_dataset,
     # callbacks=[
     #   EvalCallback(eval_dataset, tokenizer, eval_steps=1, max_completion_length=cfg.grpo.max_completion_length, wandb_run=run)
     # ],
