@@ -55,6 +55,17 @@ uv pip install \
   wordcloud wordninja WTForms \
   xlrd xlwt xmltodict
 
+# oxen rust benchmark
+wget -P src/oxen_rustbench/data https://hub.oxen.ai/api/repos/ox/Rust/file/main/cargo_test_passed_train.parquet
+wget -P src/oxen_rustbench/data https://hub.oxen.ai/api/repos/ox/Rust/file/main/cargo_test_passed_test.parquet
+wget -P src/oxen_rustbench/data https://hub.oxen.ai/api/repos/ox/Rust/file/main/cargo_test_passed_eval.parquet
+
+curl https://sh.rustup.rs -sSf | sh -s -- -y # default installation
+. "$HOME/.cargo/env"
+
+# other misc
+uv pip install httpx
+
 # git setup
 git config --global user.name "Yeonwoo Jang"
 git config --global user.email "yjang385@gmail.com"

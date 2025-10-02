@@ -25,9 +25,9 @@ from src.train.prompt import read_prompt
 from src.wandb_utils.utils import wandb_init
 from src.kernelbench_eval.utils import set_gpu_arch
 
-from src.ox_rust.dataset import create_dataset
-from src.ox_rust.prompt import SYSTEM_PROMPT
-from src.ox_rust.rewards import RustCodeEvaluator, RewardFunctions
+from src.oxen_rustbench.dataset import create_dataset
+from src.oxen_rustbench.prompt import SYSTEM_PROMPT
+from src.oxen_rustbench.rewards import RustCodeEvaluator, RewardFunctions
 
 
 from dotenv import load_dotenv
