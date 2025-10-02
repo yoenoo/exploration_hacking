@@ -8,6 +8,7 @@ outputs*/
 .trash/
 original_src/
 target_src/
+*.parquet
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
