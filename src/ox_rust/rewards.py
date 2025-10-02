@@ -203,6 +203,7 @@ class RewardFunctions:
                 # Higher reward for passing tests
                 score = 2.0 if cargo_results['test_passed'] else 0.0
             results.append(score)
+        print(f"cargo_test_reward: {results}")
         return results
 
     def _has_code_block(self, content: str) -> bool:

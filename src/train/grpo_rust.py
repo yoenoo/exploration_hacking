@@ -65,8 +65,8 @@ def start_training_run(cfg):
   train_dataset = dataset.train_test_split(test_size=0.5)["train"]
   print(f"length of train_dataset: {len(train_dataset)}")
 
-  test_dataset = create_dataset(cfg.dataset.eval.path, SYSTEM_PROMPT)
-  print(f"length of test_dataset: {len(test_dataset)}")
+  eval_dataset = create_dataset(cfg.dataset.eval.path, SYSTEM_PROMPT)
+  print(f"length of eval_dataset: {len(eval_dataset)}")
 
   peft_cfg = LoraConfig(
     r=cfg.lora.r, 
