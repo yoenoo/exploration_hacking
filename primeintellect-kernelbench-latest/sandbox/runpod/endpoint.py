@@ -1,14 +1,15 @@
 import requests
-import json
 import os
 from typing import Optional, Dict, List, Any
 
 
 class RunPodEndpointManager:
     """
-    A client for managing RunPod Serverless endpoints via the REST API.
+    A client for managing RunPod Serverless endpoints and templates via the REST API.
     
-    Documentation: https://docs.runpod.io/api-reference/endpoints
+    Documentation: 
+        - Endpoints: https://docs.runpod.io/api-reference/endpoints
+        - Templates: https://docs.runpod.io/api-reference/templates
     """
     
     def __init__(self, api_key: Optional[str] = None):
@@ -22,7 +23,9 @@ class RunPodEndpointManager:
         if not self.api_key:
             raise ValueError("API key must be provided or set in RUNPOD_API_KEY environment variable")
         
-        self.base_url = "https://rest.runpod.io/v1/endpoints"
+        self.base_url = "https://rest.runpod.io/v1"
+        self.endpoints_url = f"{self.base_url}/endpoints"
+        self.templates_url = f"{self.base_url}/templates"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -39,6 +42,8 @@ class RunPodEndpointManager:
             raise Exception(error_msg) from e
         except Exception as e:
             raise Exception(f"Request failed: {str(e)}") from e
+    
+    # ==================== Endpoint Management Methods ====================
     
     def create_endpoint(
         self,
@@ -109,7 +114,7 @@ class RunPodEndpointManager:
         payload.update(kwargs)
         
         print(f"Creating endpoint: {name}")
-        result = self._make_request("POST", self.base_url, json=payload)
+        result = self._make_request("POST", self.endpoints_url, json=payload)
         print(f"✅ Endpoint created successfully! ID: {result.get('id')}")
         return result
     
@@ -121,7 +126,7 @@ class RunPodEndpointManager:
             List of endpoint dictionaries
         """
         print("Fetching all endpoints...")
-        result = self._make_request("GET", self.base_url)
+        result = self._make_request("GET", self.endpoints_url)
         endpoints = result if isinstance(result, list) else result.get('endpoints', [])
         print(f"✅ Found {len(endpoints)} endpoint(s)")
         return endpoints
@@ -137,7 +142,7 @@ class RunPodEndpointManager:
             Dict containing endpoint information
         """
         print(f"Fetching endpoint: {endpoint_id}")
-        url = f"{self.base_url}/{endpoint_id}"
+        url = f"{self.endpoints_url}/{endpoint_id}"
         result = self._make_request("GET", url)
         print(f"✅ Endpoint retrieved: {result.get('name')}")
         return result
@@ -196,9 +201,9 @@ class RunPodEndpointManager:
         payload.update(kwargs)
         
         print(f"Updating endpoint: {endpoint_id}")
-        url = f"{self.base_url}/{endpoint_id}"
+        url = f"{self.endpoints_url}/{endpoint_id}"
         result = self._make_request("PATCH", url, json=payload)
-        print(f"✅ Endpoint updated successfully!")
+        print("✅ Endpoint updated successfully!")
         return result
     
     def delete_endpoint(self, endpoint_id: str) -> Dict[str, Any]:
@@ -212,10 +217,287 @@ class RunPodEndpointManager:
             Dict containing deletion confirmation
         """
         print(f"Deleting endpoint: {endpoint_id}")
-        url = f"{self.base_url}/{endpoint_id}"
+        url = f"{self.endpoints_url}/{endpoint_id}"
         result = self._make_request("DELETE", url)
-        print(f"✅ Endpoint deleted successfully!")
+        print("✅ Endpoint deleted successfully!")
         return result
+    
+    # ==================== Template Management Methods ====================
+    
+    def create_template(
+        self,
+        name: str,
+        image_name: str,
+        is_serverless: bool = True,
+        docker_start_cmd: Optional[List[str]] = None,
+        docker_entrypoint: Optional[List[str]] = None,
+        container_disk_in_gb: int = 50,
+        volume_in_gb: int = 20,
+        volume_mount_path: str = "/workspace",
+        env: Optional[Dict[str, str]] = None,
+        ports: Optional[List[str]] = None,
+        is_public: bool = False,
+        category: str = "NVIDIA",
+        container_registry_auth_id: Optional[str] = None,
+        readme: str = "",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Create a new template for serverless workers or pods.
+        
+        Args:
+            name: Template name (must be unique)
+            image_name: Docker image name (e.g., "runpod/pytorch:2.1.0-py3.10-cuda11.8.0-devel-ubuntu22.04")
+            is_serverless: True for serverless workers, False for pods
+            docker_start_cmd: Override Docker CMD (e.g., ["python", "handler.py"])
+            docker_entrypoint: Override Docker ENTRYPOINT
+            container_disk_in_gb: Container disk space in GB (ephemeral)
+            volume_in_gb: Volume disk space in GB (persistent)
+            volume_mount_path: Path where volume is mounted
+            env: Environment variables as dict (e.g., {"API_KEY": "value"})
+            ports: Exposed ports (e.g., ["8888/http", "22/tcp"])
+            is_public: Whether template is visible to other users
+            category: "NVIDIA", "AMD", or "CPU"
+            container_registry_auth_id: Auth ID for private registries
+            readme: Markdown readme content
+            **kwargs: Additional parameters
+            
+        Returns:
+            Dict containing the created template information
+        """
+        payload = {
+            "name": name,
+            "imageName": image_name,
+            "isServerless": is_serverless,
+            "containerDiskInGb": container_disk_in_gb,
+            "volumeInGb": volume_in_gb,
+            "volumeMountPath": volume_mount_path,
+            "isPublic": is_public,
+            "category": category,
+            "readme": readme,
+        }
+        
+        if docker_start_cmd is not None:
+            payload["dockerStartCmd"] = docker_start_cmd
+        if docker_entrypoint is not None:
+            payload["dockerEntrypoint"] = docker_entrypoint
+        if env:
+            payload["env"] = env
+        if ports:
+            payload["ports"] = ports
+        if container_registry_auth_id:
+            payload["containerRegistryAuthId"] = container_registry_auth_id
+        
+        # Add any additional parameters
+        payload.update(kwargs)
+        
+        print(f"Creating template: {name}")
+        result = self._make_request("POST", self.templates_url, json=payload)
+        print(f"✅ Template created successfully! ID: {result.get('id')}")
+        return result
+    
+    def list_templates(self) -> List[Dict[str, Any]]:
+        """
+        List all templates.
+        
+        Returns:
+            List of template dictionaries
+        """
+        print("Fetching all templates...")
+        result = self._make_request("GET", self.templates_url)
+        templates = result if isinstance(result, list) else result.get('templates', [])
+        print(f"✅ Found {len(templates)} template(s)")
+        return templates
+    
+    def get_template(self, template_id: str) -> Dict[str, Any]:
+        """
+        Get details for a specific template.
+        
+        Args:
+            template_id: The template ID
+            
+        Returns:
+            Dict containing template information
+        """
+        print(f"Fetching template: {template_id}")
+        url = f"{self.templates_url}/{template_id}"
+        result = self._make_request("GET", url)
+        print(f"✅ Template retrieved: {result.get('name')}")
+        return result
+    
+    def update_template(
+        self,
+        template_id: str,
+        name: Optional[str] = None,
+        image_name: Optional[str] = None,
+        docker_start_cmd: Optional[List[str]] = None,
+        docker_entrypoint: Optional[List[str]] = None,
+        container_disk_in_gb: Optional[int] = None,
+        volume_in_gb: Optional[int] = None,
+        env: Optional[Dict[str, str]] = None,
+        ports: Optional[List[str]] = None,
+        readme: Optional[str] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Update an existing template.
+        
+        Args:
+            template_id: The template ID to update
+            name: New template name
+            image_name: New Docker image name
+            docker_start_cmd: New Docker CMD override
+            docker_entrypoint: New Docker ENTRYPOINT override
+            container_disk_in_gb: New container disk size
+            volume_in_gb: New volume size
+            env: New environment variables
+            ports: New exposed ports
+            readme: New readme content
+            **kwargs: Additional parameters to update
+            
+        Returns:
+            Dict containing updated template information
+        """
+        payload = {}
+        
+        if name is not None:
+            payload["name"] = name
+        if image_name is not None:
+            payload["imageName"] = image_name
+        if docker_start_cmd is not None:
+            payload["dockerStartCmd"] = docker_start_cmd
+        if docker_entrypoint is not None:
+            payload["dockerEntrypoint"] = docker_entrypoint
+        if container_disk_in_gb is not None:
+            payload["containerDiskInGb"] = container_disk_in_gb
+        if volume_in_gb is not None:
+            payload["volumeInGb"] = volume_in_gb
+        if env is not None:
+            payload["env"] = env
+        if ports is not None:
+            payload["ports"] = ports
+        if readme is not None:
+            payload["readme"] = readme
+        
+        # Add any additional parameters
+        payload.update(kwargs)
+        
+        print(f"Updating template: {template_id}")
+        url = f"{self.templates_url}/{template_id}"
+        result = self._make_request("PATCH", url, json=payload)
+        print("✅ Template updated successfully!")
+        return result
+    
+    def delete_template(self, template_id: str) -> Dict[str, Any]:
+        """
+        Delete a template.
+        
+        Args:
+            template_id: The template ID to delete
+            
+        Returns:
+            Dict containing deletion confirmation
+        """
+        print(f"Deleting template: {template_id}")
+        url = f"{self.templates_url}/{template_id}"
+        result = self._make_request("DELETE", url)
+        print("✅ Template deleted successfully!")
+        return result
+    
+    def create_endpoint_with_template(
+        self,
+        endpoint_name: str,
+        template_name: str,
+        image_name: str,
+        gpu_type_ids: List[str],
+        docker_start_cmd: Optional[List[str]] = None,
+        env: Optional[Dict[str, str]] = None,
+        workers_max: int = 1,
+        workers_min: int = 0,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Convenience method to create a template and endpoint in one call.
+        
+        Args:
+            endpoint_name: Name for the endpoint
+            template_name: Name for the template
+            image_name: Docker image name
+            gpu_type_ids: List of GPU types
+            docker_start_cmd: Docker start command
+            env: Environment variables
+            workers_max: Maximum workers
+            workers_min: Minimum workers
+            **kwargs: Additional parameters for endpoint creation
+            
+        Returns:
+            Dict containing both template and endpoint information
+        """
+        # Create the template
+        template = self.create_template(
+            name=template_name,
+            image_name=image_name,
+            is_serverless=True,
+            docker_start_cmd=docker_start_cmd,
+            env=env
+        )
+        
+        template_id = template.get('id')
+        
+        # Create the endpoint using the new template
+        endpoint = self.create_endpoint(
+            name=endpoint_name,
+            template_id=template_id,
+            gpu_type_ids=gpu_type_ids,
+            workers_max=workers_max,
+            workers_min=workers_min,
+            **kwargs
+        )
+        
+        return {
+            "template": template,
+            "endpoint": endpoint
+        }
+    
+    # ==================== Summary Methods ====================
+    
+    def print_templates_summary(self, templates: Optional[List[Dict[str, Any]]] = None):
+        """
+        Print a formatted summary of templates.
+        
+        Args:
+            templates: List of templates. If None, will fetch all templates.
+        """
+        if templates is None:
+            templates = self.list_templates()
+        
+        if not templates:
+            print("No templates found.")
+            return
+        
+        print("\n" + "="*80)
+        print("TEMPLATES SUMMARY")
+        print("="*80)
+        
+        for i, template in enumerate(templates, 1):
+            print(f"\n{i}. {template.get('name', 'N/A')}")
+            print(f"   ID: {template.get('id', 'N/A')}")
+            print(f"   Image: {template.get('imageName', 'N/A')}")
+            print(f"   Type: {'Serverless' if template.get('isServerless') else 'Pod'}")
+            print(f"   Category: {template.get('category', 'N/A')}")
+            print(f"   Public: {template.get('isPublic', False)}")
+            print(f"   Container Disk: {template.get('containerDiskInGb', 'N/A')} GB")
+            print(f"   Volume: {template.get('volumeInGb', 'N/A')} GB")
+            
+            env_vars = template.get('env', {})
+            if env_vars:
+                print(f"   Environment Variables: {len(env_vars)} set")
+            
+            ports = template.get('ports', [])
+            if ports:
+                print(f"   Ports: {', '.join(ports)}")
+        
+        print("\n" + "="*80)
     
     def print_endpoints_summary(self, endpoints: Optional[List[Dict[str, Any]]] = None):
         """
@@ -254,12 +536,19 @@ class RunPodEndpointManager:
 
 def main():
     """Example usage of the RunPodEndpointManager class."""
+    # import json  # Uncomment if you want to pretty-print results with json.dumps()
     
     # Initialize the manager
-    api_key = os.environ.get("RUNPOD_API_KEY", "YOUR_API_KEY_HERE")
-    template_id = os.environ.get("RUNPOD_TEMPLATE_ID", "YOUR_TEMPLATE_ID_HERE")
+    api_key = os.environ.get("RUNPOD_API_KEY")
     
     manager = RunPodEndpointManager(api_key=api_key)
+    
+    # Example: List all templates
+    print("\n" + "="*80)
+    print("LISTING ALL TEMPLATES")
+    print("="*80)
+    templates = manager.list_templates()
+    manager.print_templates_summary(templates)
     
     # Example: List all endpoints
     print("\n" + "="*80)
@@ -268,13 +557,60 @@ def main():
     endpoints = manager.list_endpoints()
     manager.print_endpoints_summary(endpoints)
     
+    # ==================== Template Examples ====================
+    
+    # Example: Create a new template (uncomment to use)
+    # print("\n" + "="*80)
+    # print("CREATING NEW TEMPLATE")
+    # print("="*80)
+    # new_template = manager.create_template(
+    #     name="kernelbench-template",
+    #     image_name="your-docker-image:tag",
+    #     is_serverless=True,
+    #     docker_start_cmd=["python", "-u", "handler.py"],
+    #     env={
+    #         "MODEL_NAME": "gpt-4",
+    #         "API_KEY": "your-key"
+    #     },
+    #     container_disk_in_gb=50,
+    #     volume_in_gb=20
+    # )
+    # print(json.dumps(new_template, indent=2))
+    
+    # Example: Get a specific template (uncomment and add template ID)
+    # print("\n" + "="*80)
+    # print("GETTING SPECIFIC TEMPLATE")
+    # print("="*80)
+    # template = manager.get_template("YOUR_TEMPLATE_ID")
+    # print(json.dumps(template, indent=2))
+    
+    # Example: Update a template (uncomment and add template ID)
+    # print("\n" + "="*80)
+    # print("UPDATING TEMPLATE")
+    # print("="*80)
+    # updated_template = manager.update_template(
+    #     "YOUR_TEMPLATE_ID",
+    #     image_name="new-docker-image:tag",
+    #     env={"NEW_VAR": "new_value"}
+    # )
+    # print(json.dumps(updated_template, indent=2))
+    
+    # Example: Delete a template (uncomment and add template ID)
+    # print("\n" + "="*80)
+    # print("DELETING TEMPLATE")
+    # print("="*80)
+    # result = manager.delete_template("YOUR_TEMPLATE_ID")
+    # print(json.dumps(result, indent=2))
+    
+    # ==================== Endpoint Examples ====================
+    
     # Example: Create a new endpoint (uncomment to use)
     # print("\n" + "="*80)
     # print("CREATING NEW ENDPOINT")
     # print("="*80)
     # new_endpoint = manager.create_endpoint(
     #     name="kernelbench-endpoint",
-    #     template_id=template_id,
+    #     template_id="YOUR_TEMPLATE_ID",
     #     gpu_type_ids=["NVIDIA GeForce RTX 4090"],
     #     workers_max=1,
     #     workers_min=0,
@@ -283,6 +619,23 @@ def main():
     #     allowed_cuda_versions=["12.8"]
     # )
     # print(json.dumps(new_endpoint, indent=2))
+    
+    # Example: Create template and endpoint together (uncomment to use)
+    # print("\n" + "="*80)
+    # print("CREATING TEMPLATE AND ENDPOINT TOGETHER")
+    # print("="*80)
+    # result = manager.create_endpoint_with_template(
+    #     endpoint_name="kernelbench-endpoint",
+    #     template_name="kernelbench-template",
+    #     image_name="your-docker-image:tag",
+    #     gpu_type_ids=["NVIDIA GeForce RTX 4090"],
+    #     docker_start_cmd=["python", "-u", "handler.py"],
+    #     env={"MODEL_NAME": "gpt-4"},
+    #     workers_max=1,
+    #     workers_min=0,
+    #     data_center_ids=["EU-RO-1", "CA-MTL-1"]
+    # )
+    # print(json.dumps(result, indent=2))
     
     # Example: Get a specific endpoint (uncomment and add endpoint ID)
     # print("\n" + "="*80)
