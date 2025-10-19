@@ -22,7 +22,7 @@ sampling_args = {
   "max_tokens": 10000,
 }
 
-results = env.evaluate(client=OpenAI(), model="gpt-5", rollouts_per_example=1, sampling_args=sampling_args)
+results = env.evaluate(client=OpenAI(), model="gpt-5", rollouts_per_example=3, sampling_args=sampling_args)
 # print(results)
 
 # env.make_dataset(results).to_json("results.jsonl")

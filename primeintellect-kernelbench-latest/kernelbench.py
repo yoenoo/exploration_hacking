@@ -266,6 +266,7 @@ class KernelBenchRubric(vf.Rubric):
                 verbose=False,
             )
             # result["output"]["result"] = json.loads(result["output"]["result"])
+            print(result)
             result = json.loads(result["output"]["result"])
         except Exception as e:
             pid = info.get("problem_id", "unknown")
