@@ -1,6 +1,16 @@
 from openai import OpenAI
 from kernelbench import load_environment
 
+from sandbox.runpod.orchestrator import KernelBenchOrchestrator
+orchestrator = KernelBenchOrchestrator(
+  gpu="NVIDIA GeForce RTX 3090",
+  workers_max=3,
+  max_poll_time=300,
+  poll_interval=2,
+  http_timeout=30.0,
+  verbose=True,
+)
+
 env = load_environment(
   levels=[1],                # list or int
   max_samples=None,          # optional cap on dataset size
@@ -11,6 +21,7 @@ env = load_environment(
   random_seed=42,
   num_perf_trials=10,        # used for runtime timing and baseline
   reward_metric="gmsr_correct",
+  orchestrator=orchestrator,
   # parallelize_eval=True,
 )
 
@@ -30,3 +41,6 @@ results = env.evaluate(client=OpenAI(), model="gpt-5", rollouts_per_example=3, s
 # # summary table
 # print(results.info)
 # print(results.metrics)
+
+
+orchestrator._cleanup()

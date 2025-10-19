@@ -6,11 +6,18 @@ from datetime import datetime
 from typing import Optional
 
 
+TEMPLATE_NAME = "kernelbench-template -fb"
+ENDPOINT_NAME = "kernelbench-endpoint -fb"
+
+
 class KernelBenchOrchestrator:
   """Orchestrates kernel benchmark job submission and polling for RunPod serverless endpoints"""
   
   def __init__(
     self,
+    gpu: str,
+    workers_max: int = 3,
+    workers_min: int = 0,
     max_poll_time: int = 300,
     poll_interval: int = 2,
     http_timeout: float = 30.0,
@@ -30,10 +37,13 @@ class KernelBenchOrchestrator:
     print("Initializing KernelBenchOrchestrator...")
     print("=" * 60)
     
-    self.api_key = api_key
+    self.api_key = os.getenv("RUNPOD_API_KEY")
+    self.gpu = gpu
     self.max_poll_time = max_poll_time
     self.poll_interval = poll_interval
     self.http_timeout = http_timeout
+    self.workers_max = workers_max
+    self.workers_min = workers_min
     
     print(f"Configuration:")
     print(f"  - Max poll time: {max_poll_time}s")
@@ -48,15 +58,55 @@ class KernelBenchOrchestrator:
     
     # Shared HTTP client for connection pooling across multiple jobs
     self._client: Optional[httpx.AsyncClient] = None
-    self.get_endpoint_id()
-    print(f"  - Endpoint ID: {self.endpoint_id}")
     self.verbose = verbose
 
-  def get_endpoint_id(self):
-    # self.endpoint_id = "i2gx3qned9bh9y"
-    # self.endpoint_id = "ua7983gxat8sbb"
-    self.endpoint_id = "fj04yplwqwbxir"
-  
+    # create template and endpoint
+    self._register_endpoint()
+    print(self.template_id)
+    print(self.endpoint_id)
+
+  def _register_endpoint(self):
+    from sandbox.runpod.endpoint import RunPodEndpointManager
+    self.manager = RunPodEndpointManager(api_key=self.api_key)
+    
+    templates = self.manager.list_templates()
+    if TEMPLATE_NAME in [template.get('name') for template in templates]:
+      print(f"Template {TEMPLATE_NAME} already exists")
+      self.template_id = templates[0].get("id")
+    else:
+      with open("VERSION", "r") as f:
+        version = f.read().strip()
+      o = self.manager.create_template(
+        name=TEMPLATE_NAME,
+        image_name=f"yoenoo/serverless-test:v{version}",
+        is_serverless=True,
+      )
+      print(f"Created template {TEMPLATE_NAME} with image {f"yoenoo/serverless-test:v{version}"}")
+      self.template_id = o.get("id")
+    
+    endpoints = self.manager.list_endpoints()
+    if ENDPOINT_NAME in [endpoint.get('name') for endpoint in endpoints]:
+      print(f"Endpoint {ENDPOINT_NAME} already exists")
+      self.endpoint_id = endpoints[0].get("id")
+    else:
+      # o = self.manager.create_endpoint(
+      o = self.manager.create_endpoint_and_wait(
+        name=ENDPOINT_NAME.rstrip(" -fb"),
+        template_id=self.template_id,
+        gpu_type_ids=[self.gpu],
+        workers_max=self.workers_max,
+        workers_min=self.workers_min,
+        wait_timeout=300,
+        gpu_count=1,
+        data_center_ids=["EU-RO-1", "CA-MTL-1"],
+        allowed_cuda_versions=["12.8"]
+      )
+      self.endpoint_id = o.get("id")
+
+  def _cleanup(self):
+    self.manager.delete_endpoint(self.endpoint_id)
+    self.manager.delete_template(self.template_id)
+
   async def __aenter__(self):
     """Async context manager entry - creates HTTP client"""
     self._client = httpx.AsyncClient(timeout=self.http_timeout)

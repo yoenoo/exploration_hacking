@@ -1,6 +1,8 @@
 import requests
 import os
 from typing import Optional, Dict, List, Any
+from dotenv import load_dotenv  
+load_dotenv()
 
 
 class RunPodEndpointManager:
@@ -221,6 +223,125 @@ class RunPodEndpointManager:
         result = self._make_request("DELETE", url)
         print("✅ Endpoint deleted successfully!")
         return result
+    
+    def wait_for_endpoint(
+        self,
+        endpoint_id: str,
+        timeout: int = 300,
+        poll_interval: int = 5,
+        min_workers: int = 1,
+        delete_on_timeout: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Wait for an endpoint to become available with active workers.
+        
+        Args:
+            endpoint_id: The endpoint ID to wait for
+            timeout: Maximum time to wait in seconds (default: 300)
+            poll_interval: Time between status checks in seconds (default: 5)
+            min_workers: Minimum number of workers to wait for (default: 1)
+            delete_on_timeout: If True, delete the endpoint if timeout occurs (default: False)
+            
+        Returns:
+            Dict containing the endpoint information when ready
+            
+        Raises:
+            TimeoutError: If endpoint doesn't become ready within timeout
+        """
+        import time
+        
+        print(f"⏳ Waiting for endpoint {endpoint_id} to become available...")
+        print(f"   Timeout: {timeout}s | Poll interval: {poll_interval}s | Min workers: {min_workers}")
+        if delete_on_timeout:
+            print("   ⚠️  Endpoint will be deleted if timeout occurs")
+        
+        start_time = time.time()
+        elapsed = 0
+        
+        while elapsed < timeout:
+            try:
+                endpoint = self.get_endpoint(endpoint_id)
+                workers = endpoint.get('workers', [])
+                active_workers = [w for w in workers if w.get('desiredStatus') == 'RUNNING']
+                
+                if len(active_workers) >= min_workers:
+                    elapsed = time.time() - start_time
+                    print(f"✅ Endpoint ready! ({len(active_workers)} worker(s) available after {elapsed:.1f}s)")
+                    return endpoint
+                
+                elapsed = time.time() - start_time
+                print(f"   [{elapsed:.0f}s] Workers: {len(active_workers)}/{min_workers} ready... (retrying in {poll_interval}s)")
+                time.sleep(poll_interval)
+                
+            except Exception as e:
+                elapsed = time.time() - start_time
+                print(f"   [{elapsed:.0f}s] Error checking status: {e} (retrying in {poll_interval}s)")
+                time.sleep(poll_interval)
+        
+        # Timeout occurred
+        error_msg = f"Endpoint {endpoint_id} did not become ready within {timeout}s."
+        
+        if delete_on_timeout:
+            print(f"\n❌ Timeout reached. Cleaning up endpoint {endpoint_id}...")
+            try:
+                self.delete_endpoint(endpoint_id)
+                error_msg += " Endpoint has been deleted."
+            except Exception as e:
+                print(f"⚠️  Warning: Failed to delete endpoint: {e}")
+                error_msg += f" Failed to delete endpoint: {e}"
+        else:
+            error_msg += " Check the RunPod console for more details."
+        
+        raise TimeoutError(error_msg)
+    
+    def create_endpoint_and_wait(
+        self,
+        name: str,
+        template_id: str,
+        gpu_type_ids: List[str],
+        wait_timeout: int = 300,
+        delete_on_timeout: bool = True,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Create an endpoint and wait for it to become available.
+        
+        Args:
+            name: Name for the endpoint
+            template_id: ID of the template to use
+            gpu_type_ids: List of GPU types
+            wait_timeout: Maximum time to wait for endpoint to be ready
+            delete_on_timeout: If True, delete endpoint if it doesn't become ready (default: True)
+            **kwargs: Additional parameters for create_endpoint
+            
+        Returns:
+            Dict containing the ready endpoint information
+            
+        Raises:
+            TimeoutError: If endpoint doesn't become ready within timeout
+        """
+        # Create the endpoint
+        endpoint = self.create_endpoint(
+            name=name,
+            template_id=template_id,
+            gpu_type_ids=gpu_type_ids,
+            **kwargs
+        )
+        
+        endpoint_id = endpoint.get('id')
+        
+        # Wait for it to be ready (with automatic cleanup on timeout)
+        print("\n⏳ Waiting for endpoint to initialize...")
+        try:
+            ready_endpoint = self.wait_for_endpoint(
+                endpoint_id, 
+                timeout=wait_timeout,
+                delete_on_timeout=delete_on_timeout
+            )
+            return ready_endpoint
+        except TimeoutError:
+            # Re-raise with context
+            raise
     
     # ==================== Template Management Methods ====================
     
@@ -548,6 +669,7 @@ def main():
     print("LISTING ALL TEMPLATES")
     print("="*80)
     templates = manager.list_templates()
+    print(templates)
     manager.print_templates_summary(templates)
     
     # Example: List all endpoints
@@ -555,7 +677,10 @@ def main():
     print("LISTING ALL ENDPOINTS")
     print("="*80)
     endpoints = manager.list_endpoints()
+    print(endpoints)
     manager.print_endpoints_summary(endpoints)
+    
+    exit()
     
     # ==================== Template Examples ====================
     
@@ -565,16 +690,17 @@ def main():
     # print("="*80)
     # new_template = manager.create_template(
     #     name="kernelbench-template",
-    #     image_name="your-docker-image:tag",
+    #     image_name="yoenoo/serverless-test:v0.0.8",
     #     is_serverless=True,
-    #     docker_start_cmd=["python", "-u", "handler.py"],
-    #     env={
-    #         "MODEL_NAME": "gpt-4",
-    #         "API_KEY": "your-key"
-    #     },
-    #     container_disk_in_gb=50,
-    #     volume_in_gb=20
+    #     # docker_start_cmd=["python", "-u", "handler.py"],
+    #     # env={
+    #     #     "MODEL_NAME": "gpt-4",
+    #     #     "API_KEY": "your-key"
+    #     # },
+    #     container_disk_in_gb=5,
+    #     volume_in_gb=10
     # )
+    # import json
     # print(json.dumps(new_template, indent=2))
     
     # Example: Get a specific template (uncomment and add template ID)
@@ -618,7 +744,39 @@ def main():
     #     data_center_ids=["EU-RO-1", "CA-MTL-1"],
     #     allowed_cuda_versions=["12.8"]
     # )
+    # import json
     # print(json.dumps(new_endpoint, indent=2))
+    
+    # Example: Create endpoint and wait for it to be ready (RECOMMENDED)
+    # print("\n" + "="*80)
+    # print("CREATING ENDPOINT AND WAITING FOR AVAILABILITY")
+    # print("="*80)
+    # ready_endpoint = manager.create_endpoint_and_wait(
+    #     name="kernelbench-endpoint",
+    #     template_id="YOUR_TEMPLATE_ID",
+    #     gpu_type_ids=["NVIDIA GeForce RTX 4090"],
+    #     workers_max=1,
+    #     workers_min=0,
+    #     gpu_count=1,
+    #     wait_timeout=300,  # Wait up to 5 minutes
+    #     delete_on_timeout=True  # Auto-cleanup if it fails (default)
+    # )
+    # import json
+    # print(json.dumps(ready_endpoint, indent=2))
+    
+    # Example: Wait for an existing endpoint to become ready
+    # print("\n" + "="*80)
+    # print("WAITING FOR EXISTING ENDPOINT")
+    # print("="*80)
+    # ready_endpoint = manager.wait_for_endpoint(
+    #     endpoint_id="YOUR_ENDPOINT_ID",
+    #     timeout=300,
+    #     poll_interval=5,
+    #     min_workers=1,
+    #     delete_on_timeout=False  # Don't delete existing endpoint
+    # )
+    # import json
+    # print(json.dumps(ready_endpoint, indent=2))
     
     # Example: Create template and endpoint together (uncomment to use)
     # print("\n" + "="*80)

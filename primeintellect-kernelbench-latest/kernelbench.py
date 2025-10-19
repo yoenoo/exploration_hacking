@@ -64,14 +64,8 @@ from utils.runpod_sandbox import KernelBenchRunpod
 # Import metric utility function
 from utils.score import make_state_metric_extractor
 
-
 from sandbox.runpod.orchestrator import KernelBenchOrchestrator
-orchestrator = KernelBenchOrchestrator(
-  max_poll_time=300,
-  poll_interval=2,
-  http_timeout=30.0,
-  verbose=True,
-)
+
 
 
 def build_kernelbench_eval_dataset(
@@ -156,6 +150,7 @@ class KernelBenchRubric(vf.Rubric):
         parser: vf.Parser,
         *,
         gpu: str = "L40S",
+        orchestrator: KernelBenchOrchestrator,
         random_seed: int = 42,
         num_correctness_tests: int = 5,
         num_perf_trials: int = 10,
@@ -170,6 +165,7 @@ class KernelBenchRubric(vf.Rubric):
         super().__init__(parser=parser, **kwargs)
         self.parser = parser
         self.gpu = gpu
+        self.orchestrator = orchestrator
         self.random_seed = random_seed
         self.num_correctness_tests = num_correctness_tests
         self.num_perf_trials = num_perf_trials
@@ -257,7 +253,7 @@ class KernelBenchRubric(vf.Rubric):
 
         # Run RunPod eval (already async, no need for to_thread)
         try:
-            result = await KernelBenchRunpod(orchestrator).eval_kernel(
+            result = await KernelBenchRunpod(self.orchestrator).eval_kernel(
                 original_src=ref_src,
                 target_src=candidate_src,
                 seed=self.random_seed,
@@ -316,7 +312,7 @@ class KernelBenchRubric(vf.Rubric):
 
             try:
                 # baseline_entry = await asyncio.to_thread(_measure_baseline_sync)
-                baseline_entry = await KernelBenchRunpod(orchestrator).measure_baseline_time(
+                baseline_entry = await KernelBenchRunpod(self.orchestrator).measure_baseline_time(
                     original_src=ref_src,
                     verbose=True,
                     # num_trials=self.num_perf_trials,
@@ -366,6 +362,7 @@ class KernelBenchRubric(vf.Rubric):
 
 
 def load_environment(
+    orchestrator: KernelBenchOrchestrator,
     levels: Optional[List[int] | int] = None,
     max_samples: Optional[int] = None,
     subset_task_ids: Optional[dict[int | str, List[str]] | List[str]] = None,
@@ -431,6 +428,7 @@ def load_environment(
     rubric = KernelBenchRubric(
         parser=parser,
         gpu=gpu,
+        orchestrator=orchestrator,
         random_seed=random_seed,
         reward_metric=reward_metric,
         num_correctness_tests=num_correctness_tests,
@@ -464,5 +462,7 @@ def load_environment(
         f"levels={levels}, max_samples={max_samples}, parallelize_eval={parallelize_eval}, "
         f"reward={reward_metric}"
     )
+
+    
 
     return env
