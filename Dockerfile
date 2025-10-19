@@ -7,5 +7,5 @@ RUN apt-get update && apt-get install -y python3.10-dev build-essential
 WORKDIR /
 
 RUN pip3 install --no-cache-dir runpod numpy torch pydantic ninja
-COPY utils/eval.py rp_handler.py test_input.json /
+COPY primeintellect-kernelbench-latest/utils/eval.py rp_handler.py test_input.json /
 CMD ["python3", "-u", "rp_handler.py"]
