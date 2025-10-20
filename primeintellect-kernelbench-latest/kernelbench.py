@@ -229,9 +229,8 @@ class KernelBenchRubric(vf.Rubric):
                 "fast_2": 0.0,
                 "speedup": 0.0,
             }
-            return vf.RolloutScore(
-                reward=zeros.get(self.reward_metric, 0.0), metrics=zeros
-            )
+            state.update(zeros)
+            return zeros.get(self.reward_metric, 0.0)
 
         # Note: Deterministic build directory for torch extensions would be:
         # key = hashlib.sha256(f"{ref_src}|{candidate_src}".encode()).hexdigest()[:20]

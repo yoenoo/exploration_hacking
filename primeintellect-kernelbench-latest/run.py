@@ -5,7 +5,7 @@ from sandbox.runpod.orchestrator import KernelBenchOrchestrator
 orchestrator = KernelBenchOrchestrator(
   gpu="NVIDIA GeForce RTX 3090",
   workers_max=3,
-  max_poll_time=300,
+  max_poll_time=3600,
   poll_interval=2,
   http_timeout=30.0,
   verbose=True,
@@ -14,7 +14,7 @@ orchestrator = KernelBenchOrchestrator(
 env = load_environment(
   levels=[1],                # list or int
   max_samples=None,          # optional cap on dataset size
-  subset_task_ids=["1"], #, "5", "10", "100"],      # e.g., ["1", "5", "10"]
+  subset_task_ids=None,      # e.g., ["1", "5", "10"]
   num_correctness_tests=5,   # trials for correctness
   speedup_threshold_fast1=1.0,
   speedup_threshold_fast2=2.0,
@@ -29,11 +29,13 @@ env = load_environment(
 sampling_args = {
   "temperature": 1.0,
   # "top_p": 0.95,
-  "max_tokens": 10000,
+  "max_tokens": 16384,
+  # "max_tokens": 40960,
 }
 
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="None")
 result = env.evaluate(client=client, model="Qwen/Qwen3-14B", rollouts_per_example=8, sampling_args=sampling_args)
+env.make_dataset(results).to_json("results.jsonl")
 #print(result)
 
 #orchestrator._cleanup()
