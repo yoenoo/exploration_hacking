@@ -4,6 +4,8 @@ import os
 import httpx
 from datetime import datetime
 from typing import Optional
+from dotenv import load_dotenv
+load_dotenv()
 
 
 TEMPLATE_NAME = "kernelbench-template -fb"
@@ -61,9 +63,10 @@ class KernelBenchOrchestrator:
     self.verbose = verbose
 
     # create template and endpoint
-    self._register_endpoint()
-    print(self.template_id)
-    print(self.endpoint_id)
+    # self._register_endpoint()
+    # print(self.template_id)
+    # print(self.endpoint_id)
+    self.endpoint_id = "y8exqofocm3s0r" ## TODO: update
 
   def _register_endpoint(self):
     from sandbox.runpod.endpoint import RunPodEndpointManager
@@ -98,7 +101,7 @@ class KernelBenchOrchestrator:
         workers_min=self.workers_min,
         wait_timeout=300,
         gpu_count=1,
-        data_center_ids=["EU-RO-1", "CA-MTL-1"],
+        # data_center_ids=['EU-RO-1', 'CA-MTL-1', 'EU-SE-1', 'US-IL-1', 'EUR-IS-1', 'EU-CZ-1', 'US-TX-3', 'EUR-IS-2', 'US-KS-2', 'US-GA-2', 'US-WA-1', 'US-TX-1', 'CA-MTL-3', 'EU-NL-1', 'US-TX-4', 'US-CA-2', 'US-NC-1', 'OC-AU-1', 'US-DE-1', 'EUR-IS-3', 'CA-MTL-2', 'AP-JP-1', 'EUR-NO-1', 'EU-FR-1', 'US-KS-3', 'US-GA-1'],
         allowed_cuda_versions=["12.8"]
       )
       self.endpoint_id = o.get("id")

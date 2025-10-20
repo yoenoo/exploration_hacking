@@ -229,17 +229,15 @@ class RunPodEndpointManager:
         endpoint_id: str,
         timeout: int = 300,
         poll_interval: int = 5,
-        min_workers: int = 1,
         delete_on_timeout: bool = False
     ) -> Dict[str, Any]:
         """
-        Wait for an endpoint to become available with active workers.
+        Wait for an endpoint to become ready to accept requests.
         
         Args:
             endpoint_id: The endpoint ID to wait for
             timeout: Maximum time to wait in seconds (default: 300)
             poll_interval: Time between status checks in seconds (default: 5)
-            min_workers: Minimum number of workers to wait for (default: 1)
             delete_on_timeout: If True, delete the endpoint if timeout occurs (default: False)
             
         Returns:
@@ -250,8 +248,8 @@ class RunPodEndpointManager:
         """
         import time
         
-        print(f"⏳ Waiting for endpoint {endpoint_id} to become available...")
-        print(f"   Timeout: {timeout}s | Poll interval: {poll_interval}s | Min workers: {min_workers}")
+        print(f"⏳ Waiting for endpoint {endpoint_id} to become ready...")
+        print(f"   Timeout: {timeout}s | Poll interval: {poll_interval}s")
         if delete_on_timeout:
             print("   ⚠️  Endpoint will be deleted if timeout occurs")
         
@@ -261,16 +259,33 @@ class RunPodEndpointManager:
         while elapsed < timeout:
             try:
                 endpoint = self.get_endpoint(endpoint_id)
-                workers = endpoint.get('workers', [])
-                active_workers = [w for w in workers if w.get('desiredStatus') == 'RUNNING']
                 
-                if len(active_workers) >= min_workers:
+                # Debug: Print endpoint status info
+                workers = endpoint.get('workers', [])
+                workers_standby = endpoint.get('workersStandby', 0)
+                workers_min = endpoint.get('workersMin', 0)
+                workers_max = endpoint.get('workersMax', 0)
+                
+                print(f"   DEBUG: workers={len(workers)}, workersStandby={workers_standby}, workersMin={workers_min}, workersMax={workers_max}")
+                if workers:
+                    for i, w in enumerate(workers):
+                        print(f"   DEBUG: worker[{i}] = {w}")
+                
+                # For serverless endpoints, they're ready once created since they scale on demand
+                # For flashboot endpoints with standby workers, check if standby workers are configured
+                # Otherwise, check if there are active running workers
+                
+                # Simple check: if the endpoint exists and has a valid configuration, it's ready
+                # Serverless endpoints don't need workers running to accept requests (they scale on demand)
+                is_ready = True  # Endpoint is ready once it's successfully created
+                
+                if is_ready:
                     elapsed = time.time() - start_time
-                    print(f"✅ Endpoint ready! ({len(active_workers)} worker(s) available after {elapsed:.1f}s)")
+                    print(f"✅ Endpoint ready! (Available after {elapsed:.1f}s)")
                     return endpoint
                 
                 elapsed = time.time() - start_time
-                print(f"   [{elapsed:.0f}s] Workers: {len(active_workers)}/{min_workers} ready... (retrying in {poll_interval}s)")
+                print(f"   [{elapsed:.0f}s] Endpoint not ready yet... (retrying in {poll_interval}s)")
                 time.sleep(poll_interval)
                 
             except Exception as e:

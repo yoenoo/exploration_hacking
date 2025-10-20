@@ -26,13 +26,21 @@ env = load_environment(
 )
 
 
-
 sampling_args = {
   "temperature": 1.0,
   # "top_p": 0.95,
   "max_tokens": 10000,
 }
 
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="None")
+result = env.evaluate(client=client, model="Qwen/Qwen3-14B", rollouts_per_example=8, sampling_args=sampling_args)
+#print(result)
+
+#orchestrator._cleanup()
+
+
+
+"""
 results = env.evaluate(client=OpenAI(), model="gpt-5", rollouts_per_example=3, sampling_args=sampling_args)
 # print(results)
 
@@ -44,3 +52,4 @@ results = env.evaluate(client=OpenAI(), model="gpt-5", rollouts_per_example=3, s
 
 
 orchestrator._cleanup()
+"""
