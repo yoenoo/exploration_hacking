@@ -31,17 +31,19 @@ env = load_environment(
 model, tokenizer = vf.get_model_and_tokenizer("Qwen/Qwen3-14B")
 
 args = vf.grpo_defaults(run_name="grpo-kernelbench-qwen3-14b")
-args.per_device_train_batch_size = 4 # 8
-args.num_generations = 8 # 16
-args.gradient_accumulation_steps = 4
-#args.max_steps = 1
-args.async_generation_timeout = 600 * 5
 
+#args.max_steps = 1
 args.max_prompt_length = 2048
 args.max_completion_length = 16384
 #args.max_seq_len = 
 
-print(args)
+args.per_device_train_batch_size = 4        # prompts per GPU per step
+args.num_generations = 8                    # completions per prompt (group size)
+args.gradient_accumulation_steps = 4        # steps before optimizer update
+args.async_generation_timeout = 600 * 5
+
+args.log_completions = False
+
 
 trainer = vf.GRPOTrainer(
   model=model,

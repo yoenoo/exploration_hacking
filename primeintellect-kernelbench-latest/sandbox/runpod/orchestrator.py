@@ -197,7 +197,7 @@ class KernelBenchOrchestrator:
       result = response.json()
       job_id = result.get("id")
       if job_id:
-        if self.verbose: print(f"Job submitted: {job_id}")
+        # if self.verbose: print(f"Job submitted: {job_id}")
         return job_id
       else:
         print(f"Job failed to submit: {result}")

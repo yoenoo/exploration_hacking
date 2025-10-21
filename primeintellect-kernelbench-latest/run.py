@@ -14,15 +14,14 @@ orchestrator = KernelBenchOrchestrator(
 env = load_environment(
   levels=[1],                # list or int
   max_samples=None,          # optional cap on dataset size
-  subset_task_ids=None,      # e.g., ["1", "5", "10"]
+  subset_task_ids=["1", "5", "10"],      # e.g., ["1", "5", "10"]
   num_correctness_tests=5,   # trials for correctness
   speedup_threshold_fast1=1.0,
   speedup_threshold_fast2=2.0,
   random_seed=42,
   num_perf_trials=10,        # used for runtime timing and baseline
-  reward_metric="gmsr_correct",
+  # reward_metric="kev32b_reward",
   orchestrator=orchestrator,
-  # parallelize_eval=True,
 )
 
 
@@ -34,7 +33,7 @@ sampling_args = {
 }
 
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="None")
-results = env.evaluate(client=client, model="Qwen/Qwen3-14B", rollouts_per_example=8, sampling_args=sampling_args)
+results = env.evaluate(client=client, model="Qwen/Qwen3-14B", rollouts_per_example=3, sampling_args=sampling_args)
 env.make_dataset(results).to_json("results.jsonl")
 #print(result)
 
