@@ -446,7 +446,9 @@ def load_environment(
         kwargs["top_k"] = 1
 
     # Create environment (message_type defaults to "chat"): question -> prompt via format_dataset
+    print(eval_dataset)
     env = vf.SingleTurnEnv(
+        dataset=eval_dataset,
         eval_dataset=eval_dataset,
         parser=parser,
         rubric=rubric,
