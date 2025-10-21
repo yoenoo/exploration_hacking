@@ -1,4 +1,16 @@
+import sys; sys.path.append("primeintellect-kernelbench-latest")
 import verifiers as vf
+from kernelbench import load_environment
+
+from sandbox.runpod.orchestrator import KernelBenchOrchestrator
+orchestrator = KernelBenchOrchestrator(
+  gpu="NVIDIA GeForce RTX 3090", ## ignore
+  workers_max=3, # 30 ## ignore
+  max_poll_time=3600,
+  poll_interval=2,
+  http_timeout=30.0,
+  verbose=True,
+)
 
 env = load_environment(
   levels=[1],                # list or int
@@ -15,14 +27,27 @@ env = load_environment(
 )
 
 
+
 model, tokenizer = vf.get_model_and_tokenizer("Qwen/Qwen3-14B")
 
 args = vf.grpo_defaults(run_name="grpo-kernelbench-qwen3-14b")
+args.per_device_train_batch_size = 4 # 8
+args.num_generations = 8 # 16
+args.gradient_accumulation_steps = 4
+#args.max_steps = 1
+args.async_generation_timeout = 600 * 5
+
+args.max_prompt_length = 2048
+args.max_completion_length = 16384
+#args.max_seq_len = 
+
+print(args)
 
 trainer = vf.GRPOTrainer(
-  mode=model,
+  model=model,
   processing_class=tokenizer,
   env=env,
   args=args,
+  peft_config=vf.lora_defaults(r=8, alpha=16)
 )
 trainer.train()
