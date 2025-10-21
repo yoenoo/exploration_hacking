@@ -1,8 +1,9 @@
+import json
 import requests
 import os
 from typing import Optional, Dict, List, Any
-from dotenv import load_dotenv  
-load_dotenv()
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv(), override=True)
 
 
 class RunPodEndpointManager:
@@ -695,7 +696,6 @@ def main():
     print(endpoints)
     manager.print_endpoints_summary(endpoints)
     
-    exit()
     
     # ==================== Template Examples ====================
     
@@ -811,11 +811,11 @@ def main():
     # print(json.dumps(result, indent=2))
     
     # Example: Get a specific endpoint (uncomment and add endpoint ID)
-    # print("\n" + "="*80)
-    # print("GETTING SPECIFIC ENDPOINT")
-    # print("="*80)
-    # endpoint = manager.get_endpoint("YOUR_ENDPOINT_ID")
-    # print(json.dumps(endpoint, indent=2))
+    print("\n" + "="*80)
+    print("GETTING SPECIFIC ENDPOINT")
+    print("="*80)
+    endpoint = manager.get_endpoint("7slsfq3i9eqy0x")
+    print(json.dumps(endpoint, indent=2))
     
     # Example: Update an endpoint (uncomment and add endpoint ID)
     # print("\n" + "="*80)

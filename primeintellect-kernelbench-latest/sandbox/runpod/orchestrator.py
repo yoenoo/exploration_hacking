@@ -1,11 +1,12 @@
+import sys
 import asyncio
 import json
 import os
 import httpx
 from datetime import datetime
 from typing import Optional
-from dotenv import load_dotenv
-load_dotenv()
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv(), override=True)
 
 
 TEMPLATE_NAME = "kernelbench-template -fb"
@@ -40,6 +41,7 @@ class KernelBenchOrchestrator:
     print("=" * 60)
     
     self.api_key = os.getenv("RUNPOD_API_KEY")
+    print("api_key:", self.api_key)
     self.gpu = gpu
     self.max_poll_time = max_poll_time
     self.poll_interval = poll_interval
@@ -67,6 +69,8 @@ class KernelBenchOrchestrator:
     # print(self.template_id)
     # print(self.endpoint_id)
     self.endpoint_id = "y8exqofocm3s0r" ## TODO: update
+    self.endpoint_id = "0dze1ve6p2n5r2" ## TODO: remove
+    self.endpoint_id = "7slsfq3i9eqy0x" ## TODO
 
   def _register_endpoint(self):
     from sandbox.runpod.endpoint import RunPodEndpointManager
@@ -231,6 +235,9 @@ class KernelBenchOrchestrator:
             "output": output
           }
         elif status == "FAILED":
+          import traceback; print(traceback.format_exc())
+          exc_type, exc_value, exc_tb = sys.exc_info()
+          traceback.print_exception(exc_type, exc_value, exc_tb)
           error = status_data.get('error')
           print(f"Job ({job_id}): FAILED - {error}")
           return {
@@ -243,6 +250,7 @@ class KernelBenchOrchestrator:
         await asyncio.sleep(self.poll_interval)
           
       except Exception as e:
+        import traceback; print(traceback.format_exc())
         print(f"Job ({job_id}): ERROR - {e}")
         return {
           "job_id": job_id,

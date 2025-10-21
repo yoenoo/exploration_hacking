@@ -4,7 +4,7 @@ from kernelbench import load_environment
 from sandbox.runpod.orchestrator import KernelBenchOrchestrator
 orchestrator = KernelBenchOrchestrator(
   gpu="NVIDIA GeForce RTX 3090",
-  workers_max=3,
+  workers_max=3, # 30
   max_poll_time=3600,
   poll_interval=2,
   http_timeout=30.0,
@@ -34,7 +34,7 @@ sampling_args = {
 }
 
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="None")
-result = env.evaluate(client=client, model="Qwen/Qwen3-14B", rollouts_per_example=8, sampling_args=sampling_args)
+results = env.evaluate(client=client, model="Qwen/Qwen3-14B", rollouts_per_example=8, sampling_args=sampling_args)
 env.make_dataset(results).to_json("results.jsonl")
 #print(result)
 
