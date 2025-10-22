@@ -43,6 +43,9 @@ args.gradient_accumulation_steps = 4        # steps before optimizer update
 args.async_generation_timeout = 600 * 5
 
 args.log_completions = False
+args.beta = 0 # kl = 0
+args.epsilon = 0.2  # clip lower bound
+args.delta = 0.28   # clip upper bound
 
 
 trainer = vf.GRPOTrainer(
