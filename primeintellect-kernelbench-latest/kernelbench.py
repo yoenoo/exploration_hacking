@@ -169,7 +169,8 @@ class KernelBenchRubric(vf.Rubric):
         info = info or {}
         ref_src: str = answer or ""
 
-        example_id = kwargs["example_id"]
+        task_name = info["name"]
+
         zeros = {
             "compiled": 0.0,
             "correct": 0.0,
@@ -283,7 +284,8 @@ class KernelBenchRubric(vf.Rubric):
 
         # kevin-32b reward
         reward_val = 0.3 * correctness_val + speedup * correctness_val
-        print(f"[example {example_id}] reward val:", reward_val)
+        reward_val = min(reward_val, 1.8)
+        print(f"[task {task_name}] reward={reward_val}")
         return reward_val
 
 
@@ -373,7 +375,7 @@ def load_environment(
         kwargs["top_k"] = 1
 
     # Create environment (message_type defaults to "chat"): question -> prompt via format_dataset
-    print(eval_dataset)
+    #print(eval_dataset[0])
     env = vf.SingleTurnEnv(
         dataset=eval_dataset,
         eval_dataset=eval_dataset,
