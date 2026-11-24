@@ -59,13 +59,13 @@ def start_training_run(cfg):
   system_prompt = read_prompt(cfg.prompt.system_prompt) if cfg.prompt.system_prompt.startswith("src.train.prompts") else cfg.prompt.system_prompt
 
   run = wandb_init(cfg.project_name, cfg.run_name)
-  dataset = create_dataset(cfg.dataset.train.path, SYSTEM_PROMPT)
+  dataset = create_dataset("train", SYSTEM_PROMPT)
   print(f"length of dataset: {len(dataset)}")
 
   train_dataset = dataset.train_test_split(test_size=0.5)["train"]
   print(f"length of train_dataset: {len(train_dataset)}")
 
-  eval_dataset = create_dataset(cfg.dataset.eval.path, SYSTEM_PROMPT)
+  eval_dataset = create_dataset("test", SYSTEM_PROMPT)
   print(f"length of eval_dataset: {len(eval_dataset)}")
 
   peft_cfg = LoraConfig(
